@@ -359,7 +359,7 @@
   </div>
 
   <script>
-    // Конфигурация
+    // Конфигурация - ЗАМЕНИТЕ НА ВАШ URL GOOGLE APPS SCRIPT
     const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbzgqP7g38P2qaDtdZdbehtAefMdUJkthdnXEqOQ5UYBi1n11DpaTP7RvkPi-kfA8S-zHg/exec';
 
     // Инициализация данных
@@ -447,6 +447,15 @@
       } catch (error) {
         console.error('Ошибка:', error);
         alert('Ошибка при сохранении: ' + error.message);
+        
+        // Резервное сохранение в localStorage
+        const data = {
+          date: selectedDate,
+          errors: machineErrors
+        };
+        localStorage.setItem(`errors_${selectedDate}`, JSON.stringify(data));
+        originalErrors = [...machineErrors];
+        alert('Данные сохранены локально (из-за ошибки соединения)');
       } finally {
         hideLoader();
       }
@@ -458,21 +467,44 @@
       
       try {
         const response = await fetch(`${BACKEND_URL}?date=${date}`);
+        
+        if (!response.ok) {
+          throw new Error('Ошибка сети');
+        }
+        
         const data = await response.json();
         
         if (data.errors) {
           machineErrors = data.errors;
           originalErrors = [...data.errors];
         } else {
-          machineErrors = Array(14).fill(0);
-          originalErrors = Array(14).fill(0);
+          // Если данных нет на сервере, проверяем localStorage
+          const savedData = localStorage.getItem(`errors_${date}`);
+          if (savedData) {
+            const localData = JSON.parse(savedData);
+            machineErrors = localData.errors;
+            originalErrors = [...localData.errors];
+          } else {
+            machineErrors = Array(14).fill(0);
+            originalErrors = Array(14).fill(0);
+          }
         }
         
         updateDisplay();
       } catch (error) {
         console.error('Ошибка при загрузке данных:', error);
-        machineErrors = Array(14).fill(0);
-        originalErrors = Array(14).fill(0);
+        
+        // Резервная загрузка из localStorage
+        const savedData = localStorage.getItem(`errors_${date}`);
+        if (savedData) {
+          const localData = JSON.parse(savedData);
+          machineErrors = localData.errors;
+          originalErrors = [...localData.errors];
+        } else {
+          machineErrors = Array(14).fill(0);
+          originalErrors = Array(14).fill(0);
+        }
+        
         updateDisplay();
       } finally {
         hideLoader();
