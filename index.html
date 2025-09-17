@@ -170,7 +170,6 @@
       padding: 15px;
     }
     
-    /* Убрали подложку для date-picker */
     .date-input-container {
       margin: 0 auto 20px;
       max-width: 400px;
@@ -209,6 +208,12 @@
       text-align: center;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       touch-action: manipulation;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+    
+    .machine-cell:active {
+      transform: scale(0.95);
     }
     
     .machine-number {
@@ -247,7 +252,7 @@
     }
     
     .cancel-btn:active {
-      background: #dc143c;
+      background: #b01030;
     }
     
     .save-btn {
@@ -256,7 +261,7 @@
     }
     
     .save-btn:active {
-      background: #1a2f40;
+      background: #142536;
     }
     
     @media (min-width: 768px) {
@@ -271,7 +276,6 @@
       }
     }
 
-    /* Специальные стили для мобильного date picker */
     @media (max-width: 480px) {
       .container {
         padding: 10px;
@@ -280,17 +284,6 @@
       .date-input-container {
         margin: 0 0 20px 0;
         max-width: none;
-      }
-      
-      .date-input-container input {
-        border-radius: 8px;
-        font-size: 16px; /* Важно для iOS */
-      }
-      
-      /* Убираем тень и фон у нативного date picker */
-      input[type="date"] {
-        -webkit-appearance: none;
-        appearance: none;
       }
     }
 
@@ -304,15 +297,6 @@
       }
     }
 
-    /* Для iOS устройств */
-    @supports (-webkit-touch-callout: none) {
-      input[type="date"] {
-        min-height: 44px;
-        font-size: 16px;
-        padding: 12px;
-      }
-    }
-    
     /* Уведомления */
     .notification {
       position: fixed;
@@ -326,6 +310,8 @@
       z-index: 1000;
       opacity: 0;
       transition: opacity 0.3s;
+      max-width: 90%;
+      text-align: center;
     }
     
     .notification.show {
@@ -339,6 +325,26 @@
     .notification.error {
       background-color: #f44336;
     }
+    
+    .connection-status {
+      position: fixed;
+      top: 70px;
+      right: 20px;
+      padding: 5px 10px;
+      border-radius: 15px;
+      font-size: 12px;
+      z-index: 999;
+    }
+    
+    .connection-status.connected {
+      background-color: #4CAF50;
+      color: white;
+    }
+    
+    .connection-status.disconnected {
+      background-color: #f44336;
+      color: white;
+    }
   </style>
 </head>
 <body>
@@ -349,6 +355,9 @@
   
   <!-- Уведомление -->
   <div id="notification" class="notification"></div>
+  
+  <!-- Статус соединения -->
+  <div id="connectionStatus" class="connection-status" style="display: none;">Проверка соединения...</div>
 
   <header>
     <div class="logo"><img src="https://i.postimg.cc/wjGzSY92/1.png" alt="Logo"></div>
@@ -389,13 +398,14 @@
   </div>
 
   <script>
-    // Конфигурация
-    const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbyXnYy9ci41MsfowcXgmO2uuofmGE0dS_gZAsIs8bMhNjk4CJfeD1LboGoNepR1V84qFg/exec'; // Замените на ваш URL Web App
+    // КОНФИГУРАЦИЯ - ЗАМЕНИТЕ НА ВАШ URL!
+    const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbxB9U8k8WyqNMzSLJ2c6KTrUDQrAOXHW4bbA5o-BCbjodLFP8McGgU1FVlXARjVHI0iyw/exec';
     
     // Инициализация данных
     let machineErrors = Array(14).fill(0);
     let selectedDate = new Date().toISOString().split('T')[0];
     let originalErrors = Array(14).fill(0);
+    let isOnline = false;
     
     // Функции для работы с лоадером
     function showLoader() {
@@ -416,6 +426,22 @@
       setTimeout(() => {
         notification.classList.remove('show');
       }, 3000);
+    }
+    
+    // Функция для обновления статуса соединения
+    function updateConnectionStatus(connected) {
+      const statusElement = document.getElementById('connectionStatus');
+      isOnline = connected;
+      
+      if (connected) {
+        statusElement.textContent = '✓ Онлайн';
+        statusElement.className = 'connection-status connected';
+        statusElement.style.display = 'block';
+      } else {
+        statusElement.textContent = '✗ Оффлайн';
+        statusElement.className = 'connection-status disconnected';
+        statusElement.style.display = 'block';
+      }
     }
 
     // Установка текущей даты по умолчанию
@@ -471,16 +497,37 @@
       try {
         showLoader();
         
-        const response = await fetch(BACKEND_URL, {
+        // Добавляем timestamp для избежания кеширования
+        const timestamp = new Date().getTime();
+        let url = BACKEND_URL;
+        let options = {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            action: action,
-            ...data
-          })
-        });
+          body: JSON.stringify({...data, action, timestamp})
+        };
+        
+        // Для GET запросов
+        if (action === 'loadData' || action === 'test') {
+          const params = new URLSearchParams();
+          params.append('action', action);
+          params.append('timestamp', timestamp);
+          if (data.date) params.append('date', data.date);
+          url = `${BACKEND_URL}?${params.toString()}`;
+          options.method = 'GET';
+          delete options.body;
+        }
+        
+        const response = await fetch(url, options);
+        
+        // Обрабатываем перенаправление
+        if (response.redirected) {
+          const redirectedResponse = await fetch(response.url);
+          const result = await redirectedResponse.json();
+          hideLoader();
+          return result;
+        }
         
         const result = await response.json();
         hideLoader();
@@ -492,8 +539,6 @@
         return result;
       } catch (error) {
         hideLoader();
-        console.error('Ошибка:', error);
-        showNotification('Ошибка соединения с сервером: ' + error.message, false);
         throw error;
       }
     }
@@ -506,40 +551,74 @@
           errors: machineErrors
         };
         
-        await sendDataToServer('saveData', data);
+        // Пытаемся сохранить на сервер
+        const result = await sendDataToServer('saveData', data);
         originalErrors = [...machineErrors];
+        updateConnectionStatus(true);
         
-        // Сохраняем также в localStorage как резервную копию
+        // Сохраняем в localStorage как резервную копию
         localStorage.setItem(`errors_${selectedDate}`, JSON.stringify(data));
         
-        showNotification('Данные успешно сохранены в Google Таблицу!');
+        showNotification(result.message || 'Данные успешно сохранены!');
       } catch (error) {
-        // Ошибка уже обработана в sendDataToServer
+        // Сохраняем только в localStorage если сервер не доступен
+        const data = {
+          date: selectedDate,
+          errors: machineErrors
+        };
+        localStorage.setItem(`errors_${selectedDate}`, JSON.stringify(data));
+        originalErrors = [...machineErrors];
+        updateConnectionStatus(false);
+        
+        showNotification('Данные сохранены локально (сервер недоступен)', false);
       }
     }
     
     // Загрузить данные для выбранной даты
     async function loadDataForDate(date) {
       try {
+        // Пытаемся загрузить с сервера
         const result = await sendDataToServer('loadData', { date: date });
         
         if (result.status === 'success') {
           machineErrors = result.data;
           originalErrors = [...machineErrors];
           updateDisplay();
+          updateConnectionStatus(true);
+          return;
         }
       } catch (error) {
-        // В случае ошибки загрузки используем локальные данные
-        const savedData = localStorage.getItem(`errors_${date}`);
-        if (savedData) {
+        console.warn('Ошибка загрузки с сервера, используем localStorage:', error);
+        updateConnectionStatus(false);
+      }
+      
+      // Fallback на localStorage если сервер не доступен
+      const savedData = localStorage.getItem(`errors_${date}`);
+      if (savedData) {
+        try {
           const data = JSON.parse(savedData);
           machineErrors = data.errors;
           originalErrors = [...data.errors];
-        } else {
+        } catch (e) {
           machineErrors = Array(14).fill(0);
           originalErrors = Array(14).fill(0);
         }
-        updateDisplay();
+      } else {
+        machineErrors = Array(14).fill(0);
+        originalErrors = Array(14).fill(0);
+      }
+      updateDisplay();
+    }
+    
+    // Тестирование соединения
+    async function testConnection() {
+      try {
+        await sendDataToServer('test');
+        updateConnectionStatus(true);
+        return true;
+      } catch (error) {
+        updateConnectionStatus(false);
+        return false;
       }
     }
 
@@ -594,6 +673,10 @@
       setTimeout(async () => {
         generateMachineCells();
         await loadDataForDate(selectedDate);
+        
+        // Тестируем соединение с сервером
+        await testConnection();
+        
         hideLoader();
       }, 300);
     });
