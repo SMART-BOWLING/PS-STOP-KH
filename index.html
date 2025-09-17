@@ -360,7 +360,7 @@
 
   <script>
     // Конфигурация - ЗАМЕНИТЕ НА ВАШ URL GOOGLE APPS SCRIPT
-    const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbzRYW8ih9ntkjjiq3OPVUJ6xLtKp1Dqa91uHSISLPZ2rayJMSx0mpiT2m-YuPaAzTE_sA/exec';
+    const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbyLwhkaj12yIVbPJSBCkCt0NZli67A6xXiRzyz49irPuy-pLlWo4npmNzlyyopUWnt6mw/exec';
 
     // Инициализация данных
     let machineErrors = Array(14).fill(0);
@@ -420,17 +420,30 @@
       });
     }
     
-    // Сохранить данные в Google Sheets с использованием Google Forms обходного пути
+    // Сохранить данные в Google Sheets
     async function saveData() {
       showLoader();
       
       try {
-        // Создаем форму для обхода CORS
+        // Создаем массив изменений (только отличия от оригинальных значений)
+        const changes = machineErrors.map((current, index) => {
+          return current - originalErrors[index];
+        });
+        
+        // Проверяем, есть ли изменения для сохранения
+        const hasChanges = changes.some(change => change !== 0);
+        
+        if (!hasChanges) {
+          alert('Нет изменений для сохранения');
+          hideLoader();
+          return;
+        }
+        
+        // Создаем форму для отправки
         const formData = new URLSearchParams();
         formData.append('date', selectedDate);
-        formData.append('errors', JSON.stringify(machineErrors));
+        formData.append('errors', JSON.stringify(changes));
         
-        // Используем метод, который работает с CORS
         const response = await fetch(BACKEND_URL, {
           method: 'POST',
           headers: {
@@ -439,7 +452,6 @@
           body: formData
         });
         
-        // Для Google Apps Script нам нужно прочитать текст и затем распарсить его
         const text = await response.text();
         let result;
         try {
@@ -449,6 +461,7 @@
         }
         
         if (result.success) {
+          // После успешного сохранения обновляем originalErrors
           originalErrors = [...machineErrors];
           alert('Данные успешно сохранены в Google Таблицу!');
         } else {
@@ -456,49 +469,7 @@
         }
       } catch (error) {
         console.error('Ошибка:', error);
-        
-        // Альтернативный метод через iframe для обхода CORS
-        try {
-          const form = document.createElement('form');
-          form.style.display = 'none';
-          form.method = 'POST';
-          form.action = BACKEND_URL;
-          form.target = 'hiddenFrame';
-          
-          const dateInput = document.createElement('input');
-          dateInput.type = 'hidden';
-          dateInput.name = 'date';
-          dateInput.value = selectedDate;
-          form.appendChild(dateInput);
-          
-          const errorsInput = document.createElement('input');
-          errorsInput.type = 'hidden';
-          errorsInput.name = 'errors';
-          errorsInput.value = JSON.stringify(machineErrors);
-          form.appendChild(errorsInput);
-          
-          document.body.appendChild(form);
-          
-          // Создаем скрытый iframe для получения ответа
-          const iframe = document.createElement('iframe');
-          iframe.name = 'hiddenFrame';
-          iframe.style.display = 'none';
-          document.body.appendChild(iframe);
-          
-          iframe.onload = function() {
-            originalErrors = [...machineErrors];
-            alert('Данные успешно сохранены в Google Таблицу!');
-            document.body.removeChild(form);
-            document.body.removeChild(iframe);
-            hideLoader();
-          };
-          
-          form.submit();
-          return; // Выходим из функции, так как используем альтернативный метод
-        } catch (fallbackError) {
-          console.error('Ошибка альтернативного метода:', fallbackError);
-          alert('Ошибка при сохранении: ' + error.message + '. Проверьте URL бэкенда.');
-        }
+        alert('Ошибка при сохранении: ' + error.message);
       } finally {
         hideLoader();
       }
@@ -568,6 +539,17 @@
     
     // Обработчик изменения даты
     document.getElementById('date').addEventListener('change', function(e) {
+      const hasUnsavedChanges = machineErrors.some((current, index) => {
+        return current !== originalErrors[index];
+      });
+      
+      if (hasUnsavedChanges) {
+        if (!confirm('У вас есть несохраненные изменения. Перейти к другой дате без сохранения?')) {
+          this.value = selectedDate; // Отмена изменения даты
+          return;
+        }
+      }
+      
       selectedDate = e.target.value;
       loadDataForDate(selectedDate);
     });
@@ -608,6 +590,19 @@
       
       if (!e.target.closest('.menu-button') && dropdownMenu.style.display === 'flex') {
         dropdownMenu.style.display = 'none';
+      }
+    });
+    
+    // Показывать уведомление при попытке уйти со страницы с несохраненными изменениями
+    window.addEventListener('beforeunload', function(e) {
+      const hasUnsavedChanges = machineErrors.some((current, index) => {
+        return current !== originalErrors[index];
+      });
+      
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = 'У вас есть несохраненные изменения. Вы уверены, что хотите уйти?';
+        return e.returnValue;
       }
     });
     
