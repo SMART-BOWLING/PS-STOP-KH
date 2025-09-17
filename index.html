@@ -170,32 +170,29 @@
       padding: 15px;
     }
     
-    .date-picker {
+    /* Убрали подложку для date-picker */
+    .date-input-container {
       margin: 0 auto 20px;
-      padding: 15px;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       max-width: 400px;
-      width: 100%; /* Исправлено с 90% на 100% */
-      box-sizing: border-box;
+      width: 100%;
     }
 
-    .date-picker label {
+    .date-input-container label {
       display: block;
       margin-bottom: 8px;
       font-weight: 500;
       color: #333;
     }
 
-    .date-picker input {
+    .date-input-container input {
       width: 100%;
       padding: 12px;
       border: 2px solid #ddd;
       border-radius: 8px;
       font-size: 16px;
       box-sizing: border-box;
-      min-height: 44px; /* Улучшение для touch-устройств */
+      min-height: 44px;
+      background: white;
     }
     
     .machines-grid {
@@ -241,7 +238,7 @@
       font-weight: 600;
       cursor: pointer;
       transition: background-color 0.2s;
-      min-height: 44px; /* Улучшение для touch-устройств */
+      min-height: 44px;
     }
     
     .cancel-btn {
@@ -274,16 +271,26 @@
       }
     }
 
-    /* Медиа-запросы для мобильных устройств */
+    /* Специальные стили для мобильного date picker */
     @media (max-width: 480px) {
-      .date-picker {
+      .container {
+        padding: 10px;
+      }
+      
+      .date-input-container {
         margin: 0 0 20px 0;
-        border-radius: 0;
         max-width: none;
       }
       
-      .container {
-        padding: 10px;
+      .date-input-container input {
+        border-radius: 8px;
+        font-size: 16px; /* Важно для iOS */
+      }
+      
+      /* Убираем тень и фон у нативного date picker */
+      input[type="date"] {
+        -webkit-appearance: none;
+        appearance: none;
       }
     }
 
@@ -294,6 +301,15 @@
       
       .controls {
         grid-template-columns: 1fr;
+      }
+    }
+
+    /* Для iOS устройств */
+    @supports (-webkit-touch-callout: none) {
+      input[type="date"] {
+        min-height: 44px;
+        font-size: 16px;
+        padding: 12px;
       }
     }
   </style>
@@ -328,7 +344,7 @@
   </header>
 
   <div class="container">
-    <div class="date-picker">
+    <div class="date-input-container">
       <input type="date" id="date" value="">
     </div>
     
@@ -346,7 +362,7 @@
     // Инициализация данных
     let machineErrors = Array(14).fill(0);
     let selectedDate = new Date().toISOString().split('T')[0];
-    let originalErrors = Array(14).fill(0); // Для хранения исходных значений
+    let originalErrors = Array(14).fill(0);
     
     // Функции для работы с лоадером
     function showLoader() {
@@ -390,7 +406,7 @@
       if (confirm('Отменить все несохраненные изменения?')) {
         showLoader();
         setTimeout(() => {
-          machineErrors = [...originalErrors]; // Восстанавливаем исходные значения
+          machineErrors = [...originalErrors];
           updateDisplay();
           hideLoader();
         }, 300);
@@ -409,17 +425,13 @@
     function saveData() {
       showLoader();
       
-      // Имитация загрузки (в реальном приложении здесь будет запрос к серверу)
       setTimeout(() => {
         const data = {
           date: selectedDate,
           errors: machineErrors
         };
         
-        // Сохраняем в localStorage
         localStorage.setItem(`errors_${selectedDate}`, JSON.stringify(data));
-        
-        // Обновляем исходные значения
         originalErrors = [...machineErrors];
         
         hideLoader();
@@ -431,13 +443,12 @@
     function loadDataForDate(date) {
       showLoader();
       
-      // Имитация загрузки данных
       setTimeout(() => {
         const savedData = localStorage.getItem(`errors_${date}`);
         if (savedData) {
           const data = JSON.parse(savedData);
           machineErrors = data.errors;
-          originalErrors = [...data.errors]; // Сохраняем исходные значения
+          originalErrors = [...data.errors];
         } else {
           machineErrors = Array(14).fill(0);
           originalErrors = Array(14).fill(0);
