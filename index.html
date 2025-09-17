@@ -7,6 +7,7 @@
   <link rel="icon" type="image/png" href="https://i.postimg.cc/dtSpKx0W/1.png" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
+    /* Стили остаются без изменений */
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
 
     body, html {
@@ -360,7 +361,7 @@
 
   <script>
     // Конфигурация - ЗАМЕНИТЕ НА ВАШ URL GOOGLE APPS SCRIPT
-    const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbyLwhkaj12yIVbPJSBCkCt0NZli67A6xXiRzyz49irPuy-pLlWo4npmNzlyyopUWnt6mw/exec';
+    const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbypru8t3Z1QSEMbza8oBEhha8joQpouySziYvkkfXuRJMaPhAiME4b5cklne2sSWzpHow/exec';
 
     // Инициализация данных
     let machineErrors = Array(14).fill(0);
@@ -420,7 +421,7 @@
       });
     }
     
-    // Сохранить данные в Google Sheets
+    // Сохранить данные в Google Sheets - ИСПРАВЛЕННАЯ ВЕРСИЯ
     async function saveData() {
       showLoader();
       
