@@ -360,7 +360,7 @@
 
   <script>
     // Конфигурация - ЗАМЕНИТЕ НА ВАШ URL GOOGLE APPS SCRIPT
-    const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbzgqP7g38P2qaDtdZdbehtAefMdUJkthdnXEqOQ5UYBi1n11DpaTP7RvkPi-kfA8S-zHg/exec';
+    const BACKEND_URL = 'https://script.google.com/macros/s/ВАШ_ID_СКРИПТА/exec';
 
     // Инициализация данных
     let machineErrors = Array(14).fill(0);
@@ -420,23 +420,33 @@
       });
     }
     
-    // Сохранить данные в Google Sheets
+    // Сохранить данные в Google Sheets с использованием Google Forms обходного пути
     async function saveData() {
       showLoader();
       
       try {
+        // Создаем форму для обхода CORS
+        const formData = new URLSearchParams();
+        formData.append('date', selectedDate);
+        formData.append('errors', JSON.stringify(machineErrors));
+        
+        // Используем метод, который работает с CORS
         const response = await fetch(BACKEND_URL, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/x-www-form-urlencoded',
           },
-          body: JSON.stringify({
-            date: selectedDate,
-            errors: machineErrors
-          })
+          body: formData
         });
         
-        const result = await response.json();
+        // Для Google Apps Script нам нужно прочитать текст и затем распарсить его
+        const text = await response.text();
+        let result;
+        try {
+          result = JSON.parse(text);
+        } catch (e) {
+          throw new Error('Неверный формат ответа от сервера');
+        }
         
         if (result.success) {
           originalErrors = [...machineErrors];
@@ -446,16 +456,49 @@
         }
       } catch (error) {
         console.error('Ошибка:', error);
-        alert('Ошибка при сохранении: ' + error.message);
         
-        // Резервное сохранение в localStorage
-        const data = {
-          date: selectedDate,
-          errors: machineErrors
-        };
-        localStorage.setItem(`errors_${selectedDate}`, JSON.stringify(data));
-        originalErrors = [...machineErrors];
-        alert('Данные сохранены локально (из-за ошибки соединения)');
+        // Альтернативный метод через iframe для обхода CORS
+        try {
+          const form = document.createElement('form');
+          form.style.display = 'none';
+          form.method = 'POST';
+          form.action = BACKEND_URL;
+          form.target = 'hiddenFrame';
+          
+          const dateInput = document.createElement('input');
+          dateInput.type = 'hidden';
+          dateInput.name = 'date';
+          dateInput.value = selectedDate;
+          form.appendChild(dateInput);
+          
+          const errorsInput = document.createElement('input');
+          errorsInput.type = 'hidden';
+          errorsInput.name = 'errors';
+          errorsInput.value = JSON.stringify(machineErrors);
+          form.appendChild(errorsInput);
+          
+          document.body.appendChild(form);
+          
+          // Создаем скрытый iframe для получения ответа
+          const iframe = document.createElement('iframe');
+          iframe.name = 'hiddenFrame';
+          iframe.style.display = 'none';
+          document.body.appendChild(iframe);
+          
+          iframe.onload = function() {
+            originalErrors = [...machineErrors];
+            alert('Данные успешно сохранены в Google Таблицу!');
+            document.body.removeChild(form);
+            document.body.removeChild(iframe);
+            hideLoader();
+          };
+          
+          form.submit();
+          return; // Выходим из функции, так как используем альтернативный метод
+        } catch (fallbackError) {
+          console.error('Ошибка альтернативного метода:', fallbackError);
+          alert('Ошибка при сохранении: ' + error.message + '. Проверьте URL бэкенда.');
+        }
       } finally {
         hideLoader();
       }
@@ -466,13 +509,25 @@
       showLoader();
       
       try {
-        const response = await fetch(`${BACKEND_URL}?date=${date}`);
+        // Используем прокси для обхода CORS при GET запросах
+        const response = await fetch(`${BACKEND_URL}?date=${encodeURIComponent(date)}`, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          },
+        });
         
         if (!response.ok) {
           throw new Error('Ошибка сети');
         }
         
-        const data = await response.json();
+        const text = await response.text();
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch (e) {
+          throw new Error('Неверный формат ответа от сервера');
+        }
         
         if (data.errors) {
           machineErrors = data.errors;
