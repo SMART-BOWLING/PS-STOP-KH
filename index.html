@@ -312,6 +312,33 @@
         padding: 12px;
       }
     }
+    
+    /* Уведомления */
+    .notification {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #333;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    
+    .notification.show {
+      opacity: 1;
+    }
+    
+    .notification.success {
+      background-color: #4CAF50;
+    }
+    
+    .notification.error {
+      background-color: #f44336;
+    }
   </style>
 </head>
 <body>
@@ -319,6 +346,9 @@
   <div id="loader" class="loader-container">
     <div class="loader"></div>
   </div>
+  
+  <!-- Уведомление -->
+  <div id="notification" class="notification"></div>
 
   <header>
     <div class="logo"><img src="https://i.postimg.cc/wjGzSY92/1.png" alt="Logo"></div>
@@ -359,6 +389,9 @@
   </div>
 
   <script>
+    // Конфигурация
+    const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbyXnYy9ci41MsfowcXgmO2uuofmGE0dS_gZAsIs8bMhNjk4CJfeD1LboGoNepR1V84qFg/exec'; // Замените на ваш URL Web App
+    
     // Инициализация данных
     let machineErrors = Array(14).fill(0);
     let selectedDate = new Date().toISOString().split('T')[0];
@@ -371,6 +404,18 @@
 
     function hideLoader() {
       document.getElementById("loader").style.display = "none";
+    }
+    
+    // Функция для показа уведомлений
+    function showNotification(message, isSuccess = true) {
+      const notification = document.getElementById('notification');
+      notification.textContent = message;
+      notification.className = 'notification ' + (isSuccess ? 'success' : 'error');
+      notification.classList.add('show');
+      
+      setTimeout(() => {
+        notification.classList.remove('show');
+      }, 3000);
     }
 
     // Установка текущей даты по умолчанию
@@ -421,29 +466,70 @@
       });
     }
     
+    // Функция для отправки данных на сервер
+    async function sendDataToServer(action, data = {}) {
+      try {
+        showLoader();
+        
+        const response = await fetch(BACKEND_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: action,
+            ...data
+          })
+        });
+        
+        const result = await response.json();
+        hideLoader();
+        
+        if (result.status === 'error') {
+          throw new Error(result.message);
+        }
+        
+        return result;
+      } catch (error) {
+        hideLoader();
+        console.error('Ошибка:', error);
+        showNotification('Ошибка соединения с сервером: ' + error.message, false);
+        throw error;
+      }
+    }
+
     // Сохранить данные
-    function saveData() {
-      showLoader();
-      
-      setTimeout(() => {
+    async function saveData() {
+      try {
         const data = {
           date: selectedDate,
           errors: machineErrors
         };
         
-        localStorage.setItem(`errors_${selectedDate}`, JSON.stringify(data));
+        await sendDataToServer('saveData', data);
         originalErrors = [...machineErrors];
         
-        hideLoader();
-        alert('Данные сохранены!');
-      }, 800);
+        // Сохраняем также в localStorage как резервную копию
+        localStorage.setItem(`errors_${selectedDate}`, JSON.stringify(data));
+        
+        showNotification('Данные успешно сохранены в Google Таблицу!');
+      } catch (error) {
+        // Ошибка уже обработана в sendDataToServer
+      }
     }
     
     // Загрузить данные для выбранной даты
-    function loadDataForDate(date) {
-      showLoader();
-      
-      setTimeout(() => {
+    async function loadDataForDate(date) {
+      try {
+        const result = await sendDataToServer('loadData', { date: date });
+        
+        if (result.status === 'success') {
+          machineErrors = result.data;
+          originalErrors = [...machineErrors];
+          updateDisplay();
+        }
+      } catch (error) {
+        // В случае ошибки загрузки используем локальные данные
         const savedData = localStorage.getItem(`errors_${date}`);
         if (savedData) {
           const data = JSON.parse(savedData);
@@ -454,10 +540,9 @@
           originalErrors = Array(14).fill(0);
         }
         updateDisplay();
-        hideLoader();
-      }, 500);
+      }
     }
-    
+
     // Обработчик изменения даты
     document.getElementById('date').addEventListener('change', function(e) {
       selectedDate = e.target.value;
@@ -506,9 +591,10 @@
     // Инициализация при загрузке страницы
     document.addEventListener('DOMContentLoaded', function() {
       showLoader();
-      setTimeout(() => {
+      setTimeout(async () => {
         generateMachineCells();
-        loadDataForDate(selectedDate);
+        await loadDataForDate(selectedDate);
+        hideLoader();
       }, 300);
     });
   </script>
