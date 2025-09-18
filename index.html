@@ -264,11 +264,12 @@
       background: #1a2f40;
     }
     
-    .charts-btn {
-      background: #3cb371;
-      color: white;
+    .analysis-btn {
+      background: white;
+      color: black;
       margin-top: 10px;
       width: 100%;
+      border: 1px solid #ddd;
     }
     
     .charts-container {
@@ -514,7 +515,7 @@
       <button class="save-btn" onclick="saveData()">Сохранить</button>
     </div>
     
-    <button class="charts-btn" onclick="toggleCharts()">ГРАФИКИ</button>
+    <button class="analysis-btn" onclick="toggleCharts()">АНАЛИЗ</button>
     
     <div class="charts-container" id="chartsContainer">
       <div class="chart-wrapper">
@@ -648,6 +649,27 @@
           if (value !== 0) {
             dataCell.className = 'non-zero';
           }
+          row.appendChild(dataCell);
+        }
+        
+        tableBody.appendChild(row);
+      }
+      
+      // Добавляем 31-й день, если в месяце меньше 31 дня
+      if (daysInMonth < 31) {
+        const row = document.createElement('tr');
+        
+        // Первая ячейка - номер дня
+        const dayCell = document.createElement('td');
+        dayCell.textContent = 31;
+        dayCell.style.fontWeight = 'bold';
+        row.appendChild(dayCell);
+        
+        // 14 ячеек с данными для каждой машины
+        for (let j = 0; j < 14; j++) {
+          const dataCell = document.createElement('td');
+          // Пустые данные для 31-го дня
+          dataCell.textContent = '';
           row.appendChild(dataCell);
         }
         
