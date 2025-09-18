@@ -6,8 +6,8 @@
   <title>Учет ошибок по машинам</title>
   <link rel="icon" type="image/png" href="https://i.postimg.cc/dtSpKx0W/1.png" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    /* Стили остаются без изменений */
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
 
     body, html {
@@ -135,7 +135,6 @@
       font-size: 16px;
     }
 
-    /* Лоадер */
     .loader-container {
       position: fixed;
       top: 0;
@@ -164,14 +163,12 @@
       100% { transform: rotate(360deg); }
     }
 
-    /* Стили для учета ошибок */
     .container {
       max-width: 100%;
       margin: 80px auto 20px;
       padding: 15px;
     }
     
-    /* Убрали подложку для date-picker */
     .date-input-container {
       margin: 0 auto 20px;
       max-width: 400px;
@@ -221,6 +218,13 @@
     .error-count {
       font-size: 24px;
       font-weight: bold;
+    }
+    
+    .error-count.zero {
+      color: #000;
+    }
+    
+    .error-count.non-zero {
       color: #dc143c;
     }
     
@@ -260,9 +264,141 @@
       background: #1a2f40;
     }
     
+    .charts-btn {
+      background: #3cb371;
+      color: white;
+      margin-top: 10px;
+      width: 100%;
+    }
+    
+    .charts-container {
+      display: none;
+      grid-template-columns: 1fr;
+      gap: 20px;
+      margin-top: 30px;
+    }
+    
+    .chart-wrapper {
+      background: white;
+      padding: 15px;
+      border-radius: 15px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .chart-title {
+      text-align: center;
+      font-size: 18px;
+      margin-bottom: 15px;
+      color: #1a2f40;
+    }
+    
+    /* Стили для карточек статистики */
+    .stats-container {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 15px;
+      margin-top: 20px;
+      display: none;
+    }
+    
+    .stat-card {
+      background: white;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    
+    .stat-title {
+      font-size: 16px;
+      color: #666;
+      margin-bottom: 10px;
+    }
+    
+    .stat-value {
+      font-size: 28px;
+      font-weight: bold;
+    }
+    
+    .errors-stat {
+      color: #dc143c;
+    }
+    
+    .fps-stat {
+      color: #1a2f40;
+    }
+    
+    /* Стили для таблицы */
+    .table-container {
+      display: none;
+      margin-top: 20px;
+      width: 100%;
+    }
+    
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      font-size: 11px;
+      table-layout: fixed;
+    }
+    
+    .data-table th, .data-table td {
+      padding: 4px;
+      text-align: center;
+      border: 1px solid #e0e0e0;
+      width: 5.5%;
+    }
+    
+    .data-table th:first-child,
+    .data-table td:first-child {
+      width: 8%;
+      font-weight: bold;
+    }
+    
+    .data-table th {
+      background-color: #1a2f40;
+      color: white;
+      font-weight: 600;
+      padding: 6px 4px;
+      font-size: 10px;
+    }
+    
+    .data-table tr:nth-child(even) {
+      background-color: #f8f9fa;
+    }
+    
+    .data-table tr:hover {
+      background-color: #e9ecef;
+    }
+    
+    .non-zero {
+      color: #dc143c;
+      font-weight: bold;
+    }
+    
     @media (min-width: 768px) {
       .machines-grid {
         grid-template-columns: repeat(3, 1fr);
+      }
+      
+      .charts-container {
+        grid-template-columns: 1fr 1fr;
+      }
+      
+      .stats-container {
+        grid-template-columns: 1fr 1fr;
+      }
+      
+      .data-table {
+        font-size: 12px;
+      }
+      
+      .data-table th, .data-table td {
+        padding: 5px;
       }
     }
     
@@ -270,9 +406,16 @@
       .machines-grid {
         grid-template-columns: repeat(4, 1fr);
       }
+      
+      .data-table {
+        font-size: 13px;
+      }
+      
+      .data-table th, .data-table td {
+        padding: 6px;
+      }
     }
 
-    /* Специальные стили для мобильного date picker */
     @media (max-width: 480px) {
       .container {
         padding: 10px;
@@ -285,13 +428,20 @@
       
       .date-input-container input {
         border-radius: 8px;
-        font-size: 16px; /* Важно для iOS */
+        font-size: 16px;
       }
       
-      /* Убираем тень и фон у нативного date picker */
       input[type="date"] {
         -webkit-appearance: none;
         appearance: none;
+      }
+      
+      .data-table {
+        font-size: 10px;
+      }
+      
+      .data-table th, .data-table td {
+        padding: 3px;
       }
     }
 
@@ -303,9 +453,16 @@
       .controls {
         grid-template-columns: 1fr;
       }
+      
+      .data-table {
+        font-size: 9px;
+      }
+      
+      .data-table th, .data-table td {
+        padding: 2px;
+      }
     }
 
-    /* Для iOS устройств */
     @supports (-webkit-touch-callout: none) {
       input[type="date"] {
         min-height: 44px;
@@ -316,7 +473,6 @@
   </style>
 </head>
 <body>
-  <!-- Лоадер -->
   <div id="loader" class="loader-container">
     <div class="loader"></div>
   </div>
@@ -357,18 +513,76 @@
       <button class="cancel-btn" onclick="cancelChanges()">Отмена</button>
       <button class="save-btn" onclick="saveData()">Сохранить</button>
     </div>
+    
+    <button class="charts-btn" onclick="toggleCharts()">ГРАФИКИ</button>
+    
+    <div class="charts-container" id="chartsContainer">
+      <div class="chart-wrapper">
+        <div class="chart-title">Количество ошибок</div>
+        <canvas id="errorsChart"></canvas>
+      </div>
+      <div class="chart-wrapper">
+        <div class="chart-title">FPS</div>
+        <canvas id="fpsChart"></canvas>
+      </div>
+    </div>
+    
+    <!-- Контейнер для карточек статистики -->
+    <div class="stats-container" id="statsContainer">
+      <div class="stat-card">
+        <div class="stat-title">Общее количество ошибок за месяц</div>
+        <div class="stat-value errors-stat" id="totalErrors">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">Общее число FPS за месяц</div>
+        <div class="stat-value fps-stat" id="totalFPS">0</div>
+      </div>
+    </div>
+    
+    <!-- Контейнер для таблицы -->
+    <div class="table-container" id="tableContainer">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>День</th>
+            <th>1</th>
+            <th>2</th>
+            <th>3</th>
+            <th>4</th>
+            <th>5</th>
+            <th>6</th>
+            <th>7</th>
+            <th>8</th>
+            <th>9</th>
+            <th>10</th>
+            <th>11</th>
+            <th>12</th>
+            <th>13</th>
+            <th>14</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <!-- Строки таблицы будут сгенерированы через JavaScript -->
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <script>
-    // Конфигурация - ЗАМЕНИТЕ НА ВАШ URL GOOGLE APPS SCRIPT
     const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbypru8t3Z1QSEMbza8oBEhha8joQpouySziYvkkfXuRJMaPhAiME4b5cklne2sSWzpHow/exec';
 
-    // Инициализация данных
     let machineErrors = Array(14).fill(0);
+    let machineFPS = Array(14).fill().map(() => Math.floor(Math.random() * 10) + 20);
     let selectedDate = new Date().toISOString().split('T')[0];
     let originalErrors = Array(14).fill(0);
     
-    // Функции для работы с лоадером
+    let errorsChart = null;
+    let fpsChart = null;
+    
+    // Данные для статистики за месяц
+    let monthlyErrors = 247;
+    let monthlyFPS = 3426;
+    
     function showLoader() {
       document.getElementById("loader").style.display = "flex";
     }
@@ -377,10 +591,72 @@
       document.getElementById("loader").style.display = "none";
     }
 
-    // Установка текущей даты по умолчанию
+    function toggleCharts() {
+      const chartsContainer = document.getElementById('chartsContainer');
+      const statsContainer = document.getElementById('statsContainer');
+      const tableContainer = document.getElementById('tableContainer');
+      
+      if (chartsContainer.style.display === 'grid') {
+        chartsContainer.style.display = 'none';
+        statsContainer.style.display = 'none';
+        tableContainer.style.display = 'none';
+      } else {
+        chartsContainer.style.display = 'grid';
+        statsContainer.style.display = 'grid';
+        tableContainer.style.display = 'block';
+        if (!errorsChart || !fpsChart) {
+          createCharts();
+        }
+        generateTable(); // Генерируем таблицу при первом открытии
+      }
+    }
+
+    // Обновление статистики
+    function updateStats() {
+      document.getElementById('totalErrors').textContent = monthlyErrors;
+      document.getElementById('totalFPS').textContent = monthlyFPS;
+    }
+
+    // Генерация таблицы с данными
+    function generateTable() {
+      const tableBody = document.getElementById('tableBody');
+      tableBody.innerHTML = '';
+      
+      // Определяем количество дней в текущем месяце
+      const currentDate = new Date();
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      
+      // Генерируем строки для каждого дня месяца
+      for (let i = 1; i <= daysInMonth; i++) {
+        const row = document.createElement('tr');
+        
+        // Первая ячейка - номер дня
+        const dayCell = document.createElement('td');
+        dayCell.textContent = i;
+        dayCell.style.fontWeight = 'bold';
+        row.appendChild(dayCell);
+        
+        // 14 ячеек с данными для каждой машины
+        for (let j = 0; j < 14; j++) {
+          const dataCell = document.createElement('td');
+          // Случайные данные для демонстрации
+          const value = Math.floor(Math.random() * 10);
+          dataCell.textContent = value;
+          // Красный цвет для ненулевых значений
+          if (value !== 0) {
+            dataCell.className = 'non-zero';
+          }
+          row.appendChild(dataCell);
+        }
+        
+        tableBody.appendChild(row);
+      }
+    }
+
     document.getElementById('date').value = selectedDate;
     
-    // Генерация ячеек машин
     function generateMachineCells() {
       const grid = document.getElementById('machinesGrid');
       grid.innerHTML = '';
@@ -388,9 +664,12 @@
       machineErrors.forEach((count, index) => {
         const cell = document.createElement('div');
         cell.className = 'machine-cell';
+        
+        const errorCountClass = count === 0 ? 'error-count zero' : 'error-count non-zero';
+        
         cell.innerHTML = `
-          <div class="machine-number">PINSPOTTER ${index + 1}</div>
-          <div class="error-count">${count}</div>
+          <div class="machine-number">LANE ${index + 1}</div>
+          <div class="${errorCountClass}">${count}</div>
         `;
         cell.addEventListener('click', () => {
           incrementMachine(index);
@@ -399,13 +678,16 @@
       });
     }
     
-    // Увеличить счетчик для конкретной машины
     function incrementMachine(index) {
       machineErrors[index]++;
+      monthlyErrors++; // Увеличиваем общее количество ошибок за месяц
       updateDisplay();
+      updateStats(); // Обновляем статистику
+      if (errorsChart) {
+        updateCharts();
+      }
     }
     
-    // Отмена изменений
     function cancelChanges() {
       if (confirm('Отменить все несохраненные изменения?')) {
         showLoader();
@@ -413,25 +695,182 @@
       }
     }
     
-    // Обновить отображение
     function updateDisplay() {
       const cells = document.querySelectorAll('.machine-cell');
       cells.forEach((cell, index) => {
-        cell.querySelector('.error-count').textContent = machineErrors[index];
+        const countElement = cell.querySelector('.error-count');
+        countElement.textContent = machineErrors[index];
+        
+        // Обновляем класс в зависимости от значения
+        if (machineErrors[index] === 0) {
+          countElement.className = 'error-count zero';
+        } else {
+          countElement.className = 'error-count non-zero';
+        }
       });
     }
     
-    // Сохранить данные в Google Sheets - ИСПРАВЛЕННАЯ ВЕРСИЯ
+    function createCharts() {
+      const machineNumbers = Array.from({length: 14}, (_, i) => `${i + 1}`);
+      
+      if (errorsChart) {
+        errorsChart.destroy();
+      }
+      if (fpsChart) {
+        fpsChart.destroy();
+      }
+      
+      const errorsCtx = document.getElementById('errorsChart').getContext('2d');
+      errorsChart = new Chart(errorsCtx, {
+        type: 'bar',
+        data: {
+          labels: machineNumbers,
+          datasets: [{
+            data: machineErrors,
+            backgroundColor: 'rgba(220, 20, 60, 0.8)',
+            borderColor: 'rgba(220, 20, 60, 1)',
+            borderWidth: 1,
+            borderRadius: 5,
+            barPercentage: 0.7,
+            categoryPercentage: 0.8
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              callbacks: {
+                title: function(tooltipItems) {
+                  return `Lane ${tooltipItems[0].label}`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: {
+                color: 'rgba(0, 0, 0, 0.05)'
+              },
+              ticks: {
+                display: false
+              },
+              title: {
+                display: false
+              }
+            },
+            x: {
+              grid: {
+                display: false
+              },
+              ticks: {
+                display: true
+              },
+              title: {
+                display: false
+              }
+            }
+          },
+          animation: {
+            duration: 1000,
+            easing: 'easeOutQuart'
+          }
+        }
+      });
+      
+      const fpsCtx = document.getElementById('fpsChart').getContext('2d');
+      fpsChart = new Chart(fpsCtx, {
+        type: 'bar',
+        data: {
+          labels: machineNumbers,
+          datasets: [{
+            data: machineFPS,
+            backgroundColor: 'rgba(26, 47, 64, 0.8)',
+            borderColor: 'rgba(26, 47, 64, 1)',
+            borderWidth: 1,
+            borderRadius: 5,
+            barPercentage: 0.7,
+            categoryPercentage: 0.8
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              callbacks: {
+                title: function(tooltipItems) {
+                  return `Lane ${tooltipItems[0].label}`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: {
+                color: 'rgba(0, 0, 0, 0.05)'
+              },
+              ticks: {
+                display: false
+              },
+              title: {
+                display: false
+              }
+            },
+            x: {
+              grid: {
+                display: false
+              },
+              ticks: {
+                display: true
+              },
+              title: {
+                display: false
+              }
+            }
+          },
+          animation: {
+            duration: 1000,
+            easing: 'easeOutQuart'
+          }
+        }
+      });
+    }
+    
+    function updateCharts() {
+      if (errorsChart) {
+        errorsChart.data.datasets[0].data = machineErrors;
+        errorsChart.update();
+      }
+      
+      if (fpsChart) {
+        machineFPS = machineFPS.map(fps => {
+          const change = Math.floor(Math.random() * 5) - 2;
+          return Math.max(15, Math.min(35, fps + change));
+        });
+        
+        monthlyFPS += 14; // Увеличиваем общее количество FPS за месяц
+        updateStats(); // Обновляем статистику
+        
+        fpsChart.data.datasets[0].data = machineFPS;
+        fpsChart.update();
+      }
+    }
+    
     async function saveData() {
       showLoader();
       
       try {
-        // Создаем массив изменений (только отличия от оригинальных значений)
         const changes = machineErrors.map((current, index) => {
           return current - originalErrors[index];
         });
         
-        // Проверяем, есть ли изменения для сохранения
         const hasChanges = changes.some(change => change !== 0);
         
         if (!hasChanges) {
@@ -440,7 +879,6 @@
           return;
         }
         
-        // Создаем форму для отправки
         const formData = new URLSearchParams();
         formData.append('date', selectedDate);
         formData.append('errors', JSON.stringify(changes));
@@ -462,7 +900,6 @@
         }
         
         if (result.success) {
-          // После успешного сохранения обновляем originalErrors
           originalErrors = [...machineErrors];
           alert('Данные успешно сохранены в Google Таблицу!');
         } else {
@@ -476,12 +913,10 @@
       }
     }
     
-    // Загрузить данные для выбранной даты
     async function loadDataForDate(date) {
       showLoader();
       
       try {
-        // Используем прокси для обхода CORS при GET запросах
         const response = await fetch(`${BACKEND_URL}?date=${encodeURIComponent(date)}`, {
           method: 'GET',
           headers: {
@@ -505,7 +940,6 @@
           machineErrors = data.errors;
           originalErrors = [...data.errors];
         } else {
-          // Если данных нет на сервере, проверяем localStorage
           const savedData = localStorage.getItem(`errors_${date}`);
           if (savedData) {
             const localData = JSON.parse(savedData);
@@ -518,27 +952,31 @@
         }
         
         updateDisplay();
+        if (errorsChart && fpsChart) {
+          updateCharts();
+        }
       } catch (error) {
         console.error('Ошибка при загрузке данных:', error);
         
-        // Резервная загрузка из localStorage
         const savedData = localStorage.getItem(`errors_${date}`);
         if (savedData) {
           const localData = JSON.parse(savedData);
-          machineErrors = localData.errors;
-          originalErrors = [...localData.errors];
+            machineErrors = localData.errors;
+            originalErrors = [...localData.errors];
         } else {
           machineErrors = Array(14).fill(0);
           originalErrors = Array(14).fill(0);
         }
         
         updateDisplay();
+        if (errorsChart && fpsChart) {
+          updateCharts();
+        }
       } finally {
         hideLoader();
       }
     }
     
-    // Обработчик изменения даты
     document.getElementById('date').addEventListener('change', function(e) {
       const hasUnsavedChanges = machineErrors.some((current, index) => {
         return current !== originalErrors[index];
@@ -546,7 +984,7 @@
       
       if (hasUnsavedChanges) {
         if (!confirm('У вас есть несохраненные изменения. Перейти к другой дате без сохранения?')) {
-          this.value = selectedDate; // Отмена изменения даты
+          this.value = selectedDate;
           return;
         }
       }
@@ -555,7 +993,6 @@
       loadDataForDate(selectedDate);
     });
 
-    // Функции для шапки
     function toggleSiteNameDropdown() {
       const dropdown = document.getElementById("siteNameDropdown");
       dropdown.style.display = (dropdown.style.display === "block") ? "none" : "block";
@@ -580,7 +1017,6 @@
       event.stopPropagation();
     }
 
-    // Обработчик кликов вне меню
     document.addEventListener('click', function(e) {
       const siteNameDropdown = document.getElementById('siteNameDropdown');
       const dropdownMenu = document.getElementById('dropdownMenu');
@@ -594,7 +1030,6 @@
       }
     });
     
-    // Показывать уведомление при попытке уйти со страницы с несохраненными изменениями
     window.addEventListener('beforeunload', function(e) {
       const hasUnsavedChanges = machineErrors.some((current, index) => {
         return current !== originalErrors[index];
@@ -607,11 +1042,17 @@
       }
     });
     
-    // Инициализация при загрузке страницы
     document.addEventListener('DOMContentLoaded', function() {
       showLoader();
       generateMachineCells();
       loadDataForDate(selectedDate);
+      updateStats(); // Инициализируем статистику
+      
+      setInterval(() => {
+        if (fpsChart) {
+          updateCharts();
+        }
+      }, 5000);
     });
   </script>
 </body>
