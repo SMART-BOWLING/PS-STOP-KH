@@ -570,10 +570,10 @@
   </div>
 
   <script>
-    const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbypru8t3Z1QSEMbza8oBEhha8joQpouySziYvkkfXuRJMaPhAiME4b5cklne2sSWzpHow/exec';
+    const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbwmmO-U7X60jtpE8t3zei_39so1DZEJ0y61qCn6lVY9S_Z0JYKFlGkOrAbtav3Aa_TT3A/exec';
 
     let machineErrors = Array(14).fill(0);
-    let machineFPS = Array(14).fill().map(() => Math.floor(Math.random() * 10) + 20);
+    let machineFPS = Array(14).fill(0);
     let selectedDate = new Date().toISOString().split('T')[0];
     let originalErrors = Array(14).fill(0);
     
@@ -581,8 +581,9 @@
     let fpsChart = null;
     
     // Данные для статистики за месяц
-    let monthlyErrors = 247;
-    let monthlyFPS = 3426;
+    let monthlyErrors = 0;
+  
+    let monthlyFPS = 0;
     
     function showLoader() {
       document.getElementById("loader").style.display = "flex";
@@ -590,6 +591,7 @@
 
     function hideLoader() {
       document.getElementById("loader").style.display = "none";
+    
     }
 
     function toggleCharts() {
@@ -604,6 +606,7 @@
       } else {
         chartsContainer.style.display = 'grid';
         statsContainer.style.display = 'grid';
+      
         tableContainer.style.display = 'block';
         if (!errorsChart || !fpsChart) {
           createCharts();
@@ -623,14 +626,89 @@
       const tableBody = document.getElementById('tableBody');
       tableBody.innerHTML = '';
       
-      // Определяем количество дней в текущем месяце
-      const currentDate = new Date();
-      const year = currentDate.getFullYear();
-      const month = currentDate.getMonth();
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      // Загружаем данные таблица с сервера
+      loadTableData();
+    }
+
+    // Загрузка данных таблицы
+    async function loadTableData() {
+      try {
+        const response = await fetch(`${BACKEND_URL}?date=${encodeURIComponent(selectedDate)}`, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          },
+        });
+        
+        if (!response.ok) {
+          throw new Error('Ошибка сети');
+        }
+        
+        const text = await response.text();
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch (e) {
+          throw new Error('Неверный формат ответа от сервера');
+        }
+        
+        if (data.tableData) {
+          populateTable(data.tableData);
+        } else {
+          populateDemoTable();
+        }
+      } catch (error) {
+        console.error('Ошибка при загрузке данных таблицы:', error);
+        // Заполняем таблицу демо-данными в случае ошибки
+        populateDemoTable();
+      }
+    }
+
+    // Заполнение таблицы реальными данными
+    function populateTable(tableData) {
+      const tableBody = document.getElementById('tableBody');
+      tableBody.innerHTML = '';
       
-      // Генерируем строки для каждого дня месяца
-      for (let i = 1; i <= daysInMonth; i++) {
+      tableData.forEach(row => {
+        // Пропускаем пустые строки
+        if (!row.day && row.errors.every(error => error === 0)) {
+          return;
+        }
+        
+        const tr = document.createElement('tr');
+        
+        // Ячейка с днем (форматируем дату как "22" вместо "22 сент.")
+        const dayCell = document.createElement('td');
+        let dayValue = row.day;
+        if (typeof row.day === 'string' && row.day.includes(' ')) {
+          // Извлекаем только число из формата "22 сент."
+          dayValue = row.day.split(' ')[0];
+        }
+        dayCell.textContent = dayValue;
+        dayCell.style.fontWeight = 'bold';
+        tr.appendChild(dayCell);
+        
+        // Ячейки с ошибками для каждой машины
+        row.errors.forEach(error => {
+          const errorCell = document.createElement('td');
+          errorCell.textContent = error;
+          if (error !== 0) {
+            errorCell.className = 'non-zero';
+          }
+          tr.appendChild(errorCell);
+        });
+        
+        tableBody.appendChild(tr);
+      });
+    }
+
+    // Заполнение таблицы демо-данными
+    function populateDemoTable() {
+      const tableBody = document.getElementById('tableBody');
+      tableBody.innerHTML = '';
+      
+      // Создаем 31 строку для таблицы
+      for (let i = 1; i <= 31; i++) {
         const row = document.createElement('tr');
         
         // Первая ячейка - номер дня
@@ -649,27 +727,6 @@
           if (value !== 0) {
             dataCell.className = 'non-zero';
           }
-          row.appendChild(dataCell);
-        }
-        
-        tableBody.appendChild(row);
-      }
-      
-      // Добавляем 31-й день, если в месяце меньше 31 дня
-      if (daysInMonth < 31) {
-        const row = document.createElement('tr');
-        
-        // Первая ячейка - номер дня
-        const dayCell = document.createElement('td');
-        dayCell.textContent = 31;
-        dayCell.style.fontWeight = 'bold';
-        row.appendChild(dayCell);
-        
-        // 14 ячеек с данными для каждой машины
-        for (let j = 0; j < 14; j++) {
-          const dataCell = document.createElement('td');
-          // Пустые данные для 31-го дня
-          dataCell.textContent = '';
           row.appendChild(dataCell);
         }
         
@@ -872,14 +929,6 @@
       }
       
       if (fpsChart) {
-        machineFPS = machineFPS.map(fps => {
-          const change = Math.floor(Math.random() * 5) - 2;
-          return Math.max(15, Math.min(35, fps + change));
-        });
-        
-        monthlyFPS += 14; // Увеличиваем общее количество FPS за месяц
-        updateStats(); // Обновляем статистику
-        
         fpsChart.data.datasets[0].data = machineFPS;
         fpsChart.update();
       }
@@ -973,7 +1022,24 @@
           }
         }
         
+        // Загружаем данные для графиков
+        if (data.chartData) {
+          machineFPS = data.chartData.fps || Array(14).fill(0);
+        }
+        
+        // Загружаем статистику за месяц
+        if (data.totalStats) {
+          monthlyErrors = data.totalStats.errors || 0;
+          monthlyFPS = data.totalStats.fps || 0;
+        }
+        
+        // Если открыта таблица, обновляем ее данные
+        if (document.getElementById('tableContainer').style.display === 'block' && data.tableData) {
+          populateTable(data.tableData);
+        }
+        
         updateDisplay();
+        updateStats();
         if (errorsChart && fpsChart) {
           updateCharts();
         }
@@ -983,8 +1049,8 @@
         const savedData = localStorage.getItem(`errors_${date}`);
         if (savedData) {
           const localData = JSON.parse(savedData);
-            machineErrors = localData.errors;
-            originalErrors = [...localData.errors];
+          machineErrors = localData.errors;
+          originalErrors = [...localData.errors];
         } else {
           machineErrors = Array(14).fill(0);
           originalErrors = Array(14).fill(0);
@@ -1069,12 +1135,6 @@
       generateMachineCells();
       loadDataForDate(selectedDate);
       updateStats(); // Инициализируем статистику
-      
-      setInterval(() => {
-        if (fpsChart) {
-          updateCharts();
-        }
-      }, 5000);
     });
   </script>
 </body>
