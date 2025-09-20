@@ -993,7 +993,6 @@
         const hasChanges = changes.some(change => change !== 0);
         
         if (!hasChanges) {
-          alert('Нет изменений для сохранения');
           hideLoader();
           return;
         }
@@ -1020,7 +1019,19 @@
         
         if (result.success) {
           originalErrors = [...machineErrors];
-          alert('Данные успешно сохранены в Google Таблицу!');
+          
+          // ОБНОВЛЕНИЕ ДАННЫХ АНАЛИЗА ПОСЛЕ СОХРАНЕНИЯ
+          // Перезагружаем данные для текущей даты
+          await loadDataForDate(selectedDate);
+          
+          // Если анализ открыт, обновляем графики и таблицу
+          if (document.getElementById('tableContainer').style.display === 'block') {
+            if (errorsChart && fpsChart) {
+              updateCharts();
+            }
+            loadTableData(); // Перезагружаем данные таблицы
+          }
+          
         } else {
           throw new Error(result.error || 'Ошибка при сохранении');
         }
@@ -1081,15 +1092,21 @@
           monthlyFPS = data.totalStats.fps || 0;
         }
         
-        // Если открыта таблица, обновляем ее данные
-        if (document.getElementById('tableContainer').style.display === 'block' && data.tableData) {
-          populateTable(data.tableData);
-        }
-        
         updateDisplay();
         updateStats();
-        if (errorsChart && fpsChart) {
-          updateCharts();
+        
+        // Если открыта таблица, обновляем ее данные
+        if (document.getElementById('tableContainer').style.display === 'block') {
+          if (data.tableData) {
+            populateTable(data.tableData);
+          } else {
+            populateDemoTable();
+          }
+          
+          // Обновляем графики, если они созданы
+          if (errorsChart && fpsChart) {
+            updateCharts();
+          }
         }
       } catch (error) {
         console.error('Ошибка при загрузке данных:', error);
@@ -1105,6 +1122,12 @@
         }
         
         updateDisplay();
+        
+        // Если открыта таблица, обновляем демо-данные
+        if (document.getElementById('tableContainer').style.display === 'block') {
+          populateDemoTable();
+        }
+        
         if (errorsChart && fpsChart) {
           updateCharts();
         }
