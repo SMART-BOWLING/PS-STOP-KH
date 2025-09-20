@@ -614,9 +614,9 @@
 
     // Обновление статистики
     function updateStats() {
-      document.getElementById('totalErrors').textContent = monthlyErrors;
-      document.getElementById('totalFPS').textContent = monthlyFPS;
-    }
+  document.getElementById('totalErrors').textContent = monthlyErrors;
+  document.getElementById('totalFPS').textContent = Math.ceil(monthlyFPS);
+}
 
     // Генерация таблицы с данными
     function generateTable() {
