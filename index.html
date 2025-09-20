@@ -358,6 +358,8 @@
     .data-table td:first-child {
       width: 8%;
       font-weight: bold;
+      background-color: #1a2f40;
+      color: white;
     }
     
     .data-table th {
@@ -481,7 +483,7 @@
   <header>
     <div class="logo"><img src="https://i.postimg.cc/wjGzSY92/1.png" alt="Logo"></div>
     <div class="site-name" onclick="toggleSiteNameDropdown()">
-      BLOCKBUSTER
+      LUCKY STRIKE KH
       <div class="site-name-dropdown" id="siteNameDropdown">
         <a href="https://smart-bowling.github.io/SMB-SKYMALL/" class="dropdown-button">
           <span>SKYMALL</span>
@@ -519,11 +521,11 @@
     
     <div class="charts-container" id="chartsContainer">
       <div class="chart-wrapper">
-        <div class="chart-title">Количество ошибок</div>
+        <div class="chart-title">ОБЩЕЕ КОЛИЧЕСТВО ОШИБОК ЗА МЕСЯЦ</div>
         <canvas id="errorsChart"></canvas>
       </div>
       <div class="chart-wrapper">
-        <div class="chart-title">FPS</div>
+        <div class="chart-title">FPS - КОЛИЧЕСТВО ФРЕЙМОВ НА ОДНУ ОШИБКУ</div>
         <canvas id="fpsChart"></canvas>
       </div>
     </div>
@@ -614,9 +616,30 @@
 
     // Обновление статистики
     function updateStats() {
-  document.getElementById('totalErrors').textContent = monthlyErrors;
-  document.getElementById('totalFPS').textContent = Math.ceil(monthlyFPS);
-}
+      document.getElementById('totalErrors').textContent = monthlyErrors;
+      document.getElementById('totalFPS').textContent = Math.ceil(monthlyFPS);
+    }
+
+    // Функция для расчета ошибок за месяц
+    function calculateMonthlyErrors() {
+      // Создаем массив для хранения суммы ошибок по каждой машине за месяц
+      const monthlyErrors = Array(14).fill(0);
+      
+      // Получаем все строки таблицы
+      const tableRows = document.querySelectorAll('#tableBody tr');
+      
+      // Проходим по всем строкам таблицы и суммируем ошибки
+      tableRows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        // Пропускаем первую ячейку (день)
+        for (let i = 1; i < cells.length; i++) {
+          const errorCount = parseInt(cells[i].textContent) || 0;
+          monthlyErrors[i - 1] += errorCount;
+        }
+      });
+      
+      return monthlyErrors;
+    }
 
     // Генерация таблицы с данными
     function generateTable() {
@@ -651,6 +674,10 @@
         
         if (data.tableData) {
           populateTable(data.tableData);
+          // Обновляем графики после загрузки данных таблицы
+          if (errorsChart && fpsChart) {
+            updateCharts();
+          }
         } else {
           populateDemoTable();
         }
@@ -676,7 +703,7 @@
       }
     }
 
-    // Заполнение таблицы реальными данными
+    // Заполнение таблицы реальными данными (скрываем нули)
     function populateTable(tableData) {
       const tableBody = document.getElementById('tableBody');
       tableBody.innerHTML = '';
@@ -698,9 +725,14 @@
         // Ячейки с ошибками для каждой машины
         row.errors.forEach(error => {
           const errorCell = document.createElement('td');
-          errorCell.textContent = error;
+          // Показываем только ненулевые значения
           if (error !== 0) {
+            errorCell.textContent = error;
             errorCell.className = 'non-zero';
+          } else {
+            // Для нулевых значений оставляем ячейку пустой
+            errorCell.textContent = '';
+            errorCell.className = '';
           }
           tr.appendChild(errorCell);
         });
@@ -709,7 +741,7 @@
       });
     }
 
-    // Заполнение таблицы демо-данными
+    // Заполнение таблицы демо-данными (скрываем нули)
     function populateDemoTable() {
       const tableBody = document.getElementById('tableBody');
       tableBody.innerHTML = '';
@@ -724,15 +756,20 @@
         dayCell.style.fontWeight = 'bold';
         row.appendChild(dayCell);
         
-        // 14 ячеек с данными для каждой машины
+        // 14 ячеек с данными для каждой машине
         for (let j = 0; j < 14; j++) {
           const dataCell = document.createElement('td');
           // Случайные данные для демонстрации
           const value = Math.floor(Math.random() * 10);
-          dataCell.textContent = value;
-          // Красный цвет для ненулевых значений
+          
+          // Показываем только ненулевые значения
           if (value !== 0) {
+            dataCell.textContent = value;
             dataCell.className = 'non-zero';
+          } else {
+            // Для нулевых значений оставляем ячейку пустой
+            dataCell.textContent = '';
+            dataCell.className = '';
           }
           row.appendChild(dataCell);
         }
@@ -804,13 +841,16 @@
         fpsChart.destroy();
       }
       
+      // Получаем данные за месяц для графика ошибок
+      const monthlyErrorsData = calculateMonthlyErrors();
+      
       const errorsCtx = document.getElementById('errorsChart').getContext('2d');
       errorsChart = new Chart(errorsCtx, {
         type: 'bar',
         data: {
           labels: machineNumbers,
           datasets: [{
-            data: machineErrors,
+            data: monthlyErrorsData,
             backgroundColor: 'rgba(220, 20, 60, 0.8)',
             borderColor: 'rgba(220, 20, 60, 1)',
             borderWidth: 1,
@@ -829,6 +869,9 @@
               callbacks: {
                 title: function(tooltipItems) {
                   return `Lane ${tooltipItems[0].label}`;
+                },
+                label: function(context) {
+                  return `Ошибок за месяц: ${context.raw}`;
                 }
               }
             }
@@ -929,7 +972,7 @@
     
     function updateCharts() {
       if (errorsChart) {
-        errorsChart.data.datasets[0].data = machineErrors;
+        errorsChart.data.datasets[0].data = calculateMonthlyErrors();
         errorsChart.update();
       }
       
