@@ -617,7 +617,7 @@
     // Обновление статистики
     function updateStats() {
       document.getElementById('totalErrors').textContent = monthlyErrors;
-      document.getElementById('totalFPS').textContent = Math.ceil(monthlyFPS);
+      document.getElementById('totalFPS').textContent = Math.ceil(monthlyFPS); // Округляем в большую сторону
     }
 
     // Функция для расчета ошибок за месяц
@@ -933,6 +933,9 @@
               callbacks: {
                 title: function(tooltipItems) {
                   return `Lane ${tooltipItems[0].label}`;
+                },
+                label: function(context) {
+                  return ` ${Math.ceil(context.raw)}`; // Округляем в большую сторону
                 }
               }
             }
