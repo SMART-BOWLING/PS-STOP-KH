@@ -567,14 +567,17 @@
         </tbody>
       </table>
     </div>
+  
   </div>
 
   <script>
-    const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbwmmO-U7X60jtpE8t3zei_39so1DZEJ0y61qCn6lVY9S_Z0JYKFlGkOrAbtav3Aa_TT3A/exec';
+    const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbyh2_ZxjJTnMG4ZXCG_WDj90ArWjNo8YMk_8NQ7HGqvS0qP1daLRcoExoH-21s2xqwnzQ/exec';
 
     let machineErrors = Array(14).fill(0);
     let machineFPS = Array(14).fill(0);
     let selectedDate = new Date().toISOString().split('T')[0];
+  
+  
     let originalErrors = Array(14).fill(0);
     
     let errorsChart = null;
@@ -582,7 +585,6 @@
     
     // Данные для статистики за месяц
     let monthlyErrors = 0;
-  
     let monthlyFPS = 0;
     
     function showLoader() {
@@ -591,7 +593,6 @@
 
     function hideLoader() {
       document.getElementById("loader").style.display = "none";
-    
     }
 
     function toggleCharts() {
@@ -606,12 +607,11 @@
       } else {
         chartsContainer.style.display = 'grid';
         statsContainer.style.display = 'grid';
-      
         tableContainer.style.display = 'block';
         if (!errorsChart || !fpsChart) {
           createCharts();
         }
-        generateTable(); // Генерируем таблицу при первом открытии
+        loadTableData(); // Загружаем данные таблицы при открытии
       }
     }
 
@@ -626,7 +626,7 @@
       const tableBody = document.getElementById('tableBody');
       tableBody.innerHTML = '';
       
-      // Загружаем данные таблица с сервера
+      // Загружаем данные таблицы с сервера
       loadTableData();
     }
 
@@ -657,6 +657,21 @@
         } else {
           populateDemoTable();
         }
+        
+        // Обновляем данные для графиков и статистики
+        if (data.chartData) {
+          machineFPS = data.chartData.fps || Array(14).fill(0);
+        }
+        
+        if (data.totalStats) {
+          monthlyErrors = data.totalStats.errors || 0;
+          monthlyFPS = data.totalStats.fps || 0;
+          updateStats();
+        }
+        
+        if (errorsChart && fpsChart) {
+          updateCharts();
+        }
       } catch (error) {
         console.error('Ошибка при загрузке данных таблицы:', error);
         // Заполняем таблицу демо-данными в случае ошибки
@@ -677,14 +692,9 @@
         
         const tr = document.createElement('tr');
         
-        // Ячейка с днем (форматируем дату как "22" вместо "22 сент.")
+        // Ячейка с днем
         const dayCell = document.createElement('td');
-        let dayValue = row.day;
-        if (typeof row.day === 'string' && row.day.includes(' ')) {
-          // Извлекаем только число из формата "22 сент."
-          dayValue = row.day.split(' ')[0];
-        }
-        dayCell.textContent = dayValue;
+        dayCell.textContent = row.day;
         dayCell.style.fontWeight = 'bold';
         tr.appendChild(dayCell);
         
@@ -759,9 +769,7 @@
     
     function incrementMachine(index) {
       machineErrors[index]++;
-      monthlyErrors++; // Увеличиваем общее количество ошибок за месяц
       updateDisplay();
-      updateStats(); // Обновляем статистику
       if (errorsChart) {
         updateCharts();
       }
