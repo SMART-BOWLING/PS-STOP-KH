@@ -383,6 +383,16 @@
       font-weight: bold;
     }
     
+    /* Стили для графика сравнения по годам */
+    .yearly-comparison-container {
+      display: none;
+      margin-top: 30px;
+      background: white;
+      padding: 15px;
+      border-radius: 15px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
     @media (min-width: 768px) {
       .machines-grid {
         grid-template-columns: repeat(3, 1fr);
@@ -561,7 +571,7 @@
             <th>11</th>
             <th>12</th>
             <th>13</th>
-            <th>14</th>
+            <极>14</极>
           </tr>
         </thead>
         <tbody id="tableBody">
@@ -569,18 +579,29 @@
         </tbody>
       </table>
     </div>
+    
+    <!-- Контейнер для графика сравнения по годам -->
+    <div class="yearly-comparison-container" id="yearlyComparisonContainer">
+      <div class="chart-title">СРАВНЕНИЕ СТАТИСТИКИ FPS ПО ГОДАМ</div>
+      <canvas id="yearlyComparisonChart"></canvas>
+    </div>
   </div>
 
   <script>
-    const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbwlI38eagqdGd2sTKL8D3w0-9nze0jcYLPYtwLvo0F5zJHoQgqhNfwUjHVtFE4johLAzQ/exec';
+    const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbxwkckt1cOWNNR0Iuktyqf8eEpvwQxhuF7zmhsxzT8WNjdn8qh5TGFRhR2AiH263ufbtA/exec';
 
     let machineErrors = Array(14).fill(0);
+  
     let machineFPS = Array(14).fill(0);
     let selectedDate = new Date().toISOString().split('T')[0];
     let originalErrors = Array(14).fill(0);
     
     let errorsChart = null;
+  
+  
     let fpsChart = null;
+    let yearlyComparisonChart = null;
+  
     
     // Данные для статистики за месяц
     let monthlyErrors = 0;
@@ -598,17 +619,23 @@
       const chartsContainer = document.getElementById('chartsContainer');
       const statsContainer = document.getElementById('statsContainer');
       const tableContainer = document.getElementById('tableContainer');
+      const yearlyComparisonContainer = document.getElementById('yearlyComparisonContainer');
       
       if (chartsContainer.style.display === 'grid') {
         chartsContainer.style.display = 'none';
         statsContainer.style.display = 'none';
         tableContainer.style.display = 'none';
+        yearlyComparisonContainer.style.display = 'none';
       } else {
         chartsContainer.style.display = 'grid';
         statsContainer.style.display = 'grid';
         tableContainer.style.display = 'block';
+        yearlyComparisonContainer.style.display = 'block';
         if (!errorsChart || !fpsChart) {
           createCharts();
+        }
+        if (!yearlyComparisonChart) {
+          createYearlyComparisonChart();
         }
         loadTableData(); // Загружаем данные таблицы при открытии
       }
@@ -968,6 +995,108 @@
           animation: {
             duration: 1000,
             easing: 'easeOutQuart'
+          }
+        }
+      });
+    }
+    
+    // Новая функция для загрузки данных сравнения по годам
+    async function loadYearlyComparisonData() {
+      try {
+        // Используем специальный параметр для запроса данных сравнения по годам
+        const response = await fetch(`${BACKEND_URL}?yearlyComparison=true`, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          },
+        });
+        
+        if (!response.ok) {
+          throw new Error('Ошибка сети при загрузке данных сравнения');
+        }
+        
+        const text = await response.text();
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch (e) {
+          throw new Error('Неверный формат ответа от сервера');
+        }
+        
+        return data;
+      } catch (error) {
+        console.error('Ошибка при загрузке данных сравнения по годам:', error);
+        // Возвращаем демо-данные в случае ошибки
+        return getDemoYearlyData();
+      }
+    }
+    
+    // Функция для получения демо-данных (если реальные данные недоступны)
+    function getDemoYearlyData() {
+      const currentYear = new Date().getFullYear();
+      return {
+        years: [currentYear - 1, currentYear],
+        months: ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'],
+        data: {
+          [currentYear - 1]: [120, 95, 130, 110, 105, 90, 115, 125, 100, 135, 140, 120],
+          [currentYear]: [110, 100, 125, 115, 95, 85, 105, 120, 110, 130, 145, 115]
+        }
+      };
+    }
+    
+    // Обновленная функция создания графика сравнения по годам
+    async function createYearlyComparisonChart() {
+      const yearlyComparisonCtx = document.getElementById('yearlyComparisonChart').getContext('2d');
+      
+      // Загружаем данные с сервера
+      const yearlyData = await loadYearlyComparisonData();
+      
+      // Создаем датасеты для каждого года
+      const datasets = yearlyData.years.map((year, index) => {
+        // Генерируем случайный цвет для каждого года
+        const hue = index * 60 % 360; // Равномерное распределение цветов по цветовому кругу
+        return {
+          label: year.toString(),
+          data: yearlyData.data[year] || Array(12).fill(0),
+          borderColor: `hsl(${hue}, 70%, 50%)`,
+          backgroundColor: `hsla(${hue}, 70%, 50%, 0.2)`,
+          borderWidth: 2,
+          fill: false,
+          tension: 0.4
+        };
+      });
+      
+      yearlyComparisonChart = new Chart(yearlyComparisonCtx, {
+        type: 'line',
+        data: {
+          labels: yearlyData.months,
+          datasets: datasets
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              position: 'top',
+            },
+            title: {
+              display: true,
+              text: 'Сравнение FPS по месяцам за разные годы'
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'FPS (Фреймов на ошибку)'
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: 'Месяцы'
+              }
+            }
           }
         }
       });
