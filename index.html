@@ -456,6 +456,16 @@
       .data-table th, .data-table td {
         padding: 3px;
       }
+      
+      /* Улучшенные стили для мобильных устройств */
+      .yearly-comparison-container {
+        height: 300px; /* Увеличиваем высоту для мобильных устройств */
+        padding: 10px;
+      }
+      
+      .yearly-comparison-container canvas {
+        height: 280px !important; /* Принудительно устанавливаем высоту canvas */
+      }
     }
 
     @media (max-width: 360px) {
@@ -473,6 +483,14 @@
       
       .data-table th, .data-table td {
         padding: 2px;
+      }
+      
+      .yearly-comparison-container {
+        height: 320px; /* Еще больше увеличиваем высоту для очень маленьких экранов */
+      }
+      
+      .yearly-comparison-container canvas {
+        height: 300px !important;
       }
     }
 
@@ -561,7 +579,7 @@
             <th>1</th>
             <th>2</th>
             <th>3</th>
-            <th>4</th>
+            <极>4</极>
             <th>5</th>
             <th>6</th>
             <th>7</th>
@@ -571,7 +589,7 @@
             <th>11</th>
             <th>12</th>
             <th>13</th>
-            <极>14</极>
+            <th>14</th>
           </tr>
         </thead>
         <tbody id="tableBody">
@@ -582,7 +600,7 @@
     
     <!-- Контейнер для графика сравнения по годам -->
     <div class="yearly-comparison-container" id="yearlyComparisonContainer">
-      <div class="chart-title">СРАВНЕНИЕ СТАТИСТИКИ FPS ПО ГОДАМ</div>
+      <!-- Убрал заголовок "СРАВНЕНИЕ СТАТИСТИКИ FPS ПО ГОДАМ" -->
       <canvas id="yearlyComparisonChart"></canvas>
     </div>
   </div>
@@ -1074,13 +1092,14 @@
         },
         options: {
           responsive: true,
+          maintainAspectRatio: false, // Отключаем сохранение пропорций для лучшего контроля высоты
           plugins: {
             legend: {
               position: 'top',
             },
             title: {
-              display: true,
-              text: 'Сравнение FPS по месяцам за разные годы'
+              display: false, // Убираем заголовок графика
+              text: ''
             }
           },
           scales: {
@@ -1088,7 +1107,7 @@
               beginAtZero: true,
               title: {
                 display: true,
-                text: 'FPS (Фреймов на ошибку)'
+                text: 'FPS'
               }
             },
             x: {
@@ -1100,6 +1119,13 @@
           }
         }
       });
+      
+      // Устанавливаем высоту canvas для мобильных устройств
+      if (window.innerWidth <= 480) {
+        const canvas = document.getElementById('yearlyComparisonChart');
+        canvas.style.height = '280px';
+        yearlyComparisonChart.update(); // Обновляем график с новой высотой
+      }
     }
     
     function updateCharts() {
