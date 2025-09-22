@@ -5,15 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Учет ошибок по машинам</title>
   <link rel="icon" type="image/png" href="https://i.postimg.cc/dtSpKx0W/1.png" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Preload и асинхронная загрузка -->
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
-
-    body, html {
-      margin: 0;
-      padding: 0;
-      font-family: "Poppins", sans-serif;
+    /* КРИТИЧЕСКИЕ СТИЛИ ДЛЯ КАРТОЧЕК */
+    body, html { 
+      margin: 0; 
+      padding: 0; 
+      font-family: system-ui, -apple-system, sans-serif; 
       background-color: #f4f6f9;
       color: #1a2f40;
       font-weight: 700;
@@ -208,6 +211,29 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       touch-action: manipulation;
       transition: transform 0.2s, box-shadow 0.2s;
+      min-height: 60px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      position: relative;
+    }
+    
+    .machine-cell.loading {
+      opacity: 0.7;
+    }
+    
+    .machine-cell.loading::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 20px;
+      height: 20px;
+      margin: -10px 0 0 -10px;
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid #dc143c;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
     }
     
     .machine-cell:active {
@@ -224,6 +250,7 @@
     .error-count {
       font-size: 24px;
       font-weight: bold;
+      transition: opacity 0.3s ease;
     }
     
     .error-count.zero {
@@ -279,7 +306,6 @@
       transition: all 0.4s ease;
     }
     
-    /* Анимация загрузки для кнопки анализа */
     .analysis-btn.loading {
       color: transparent;
       pointer-events: none;
@@ -299,22 +325,11 @@
       animation: buttonSpin 0.8s linear infinite;
     }
     
-    .analysis-btn.loading::before {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      color: #dc143c;
-      font-weight: 600;
-    }
-    
     @keyframes buttonSpin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
     
-    
-    /* Пульсирующая анимация при открытии */
     .analysis-btn.pulse {
       animation: pulse 0.5s ease-in-out;
     }
@@ -360,7 +375,6 @@
       color: #1a2f40;
     }
     
-    /* Стили для карточек статистики */
     .stats-container {
       display: none;
       grid-template-columns: 1fr;
@@ -409,7 +423,6 @@
       color: #1a2f40;
     }
     
-    /* Стили для таблицы */
     .table-container {
       display: none;
       margin-top: 20px;
@@ -477,7 +490,6 @@
       font-weight: bold;
     }
     
-    /* Стили для графика сравнения по годам */
     .yearly-comparison-container {
       display: none;
       margin-top: 30px;
@@ -567,10 +579,6 @@
         height: 300px;
         padding: 10px;
       }
-      
-      .analysis-btn.loading::before {
-        font-size: 14px;
-      }
     }
 
     @media (max-width: 360px) {
@@ -602,6 +610,20 @@
         padding: 12px;
       }
     }
+
+    /* Асинхронная загрузка шрифта */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 400;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/poppins/v20/pxiEyp8kv8JHgFVrJJnecnFHGPezSQ.woff2) format('woff2');
+    }
+    
+    /* Применить шрифт когда загрузится */
+    .fonts-loaded body {
+      font-family: 'Poppins', system-ui, -apple-system, sans-serif;
+    }
   </style>
 </head>
 <body>
@@ -610,7 +632,7 @@
   </div>
 
   <header>
-    <div class="logo"><img src="https://i.postimg.cc/wjGzSY92/1.png" alt="Logo"></div>
+    <div class="logo"><img src="https://i.postimg.cc/wjGzSY92/1.png" alt="Logo" loading="lazy" width="40" height="40"></div>
     <div class="site-name" onclick="toggleSiteNameDropdown()">
       LUCKY STRIKE KH
       <div class="site-name-dropdown" id="siteNameDropdown">
@@ -638,7 +660,7 @@
     </div>
     
     <div class="machines-grid" id="machinesGrid">
-      <!-- Ячейки машин будут сгенерированы через JavaScript -->
+      <!-- Ячейки машин будут сгенерированы мгновенно -->
     </div>
     
     <div class="controls">
@@ -661,7 +683,6 @@
       </div>
     </div>
     
-    <!-- Контейнер для карточек статистики -->
     <div class="stats-container" id="statsContainer">
       <div class="stat-card" id="errorsStatCard">
         <div class="stat-title">Общее количество ошибок за месяц</div>
@@ -706,6 +727,8 @@
     </div>
   </div>
 
+  <!-- ВСЕ СКРИПТЫ В КОНЦЕ С ДЕФЕР -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
   <script>
     const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbxwkckt1cOWNNR0Iuktyqf8eEpvwQxhuF7zmhsxzT8WNjdn8qh5TGFRhR2AiH263ufbtA/exec';
 
@@ -718,14 +741,41 @@
     let fpsChart = null;
     let yearlyComparisonChart = null;
     
-    // Данные для статистики за месяц
     let monthlyErrors = 0;
     let monthlyFPS = 0;
     
-    // Флаг для отслеживания состояния загрузки аналитических данных
     let analyticsLoaded = false;
     let isAnalysisOpen = false;
+    let isDataLoaded = false;
     
+    // КАРТОЧКИ ПОЯВЛЯЮТСЯ МГНОВЕННО ПРИ ЗАГРУЗКЕ
+    document.addEventListener('DOMContentLoaded', function() {
+      // 1. Сразу генерируем карточки
+      generateMachineCells();
+      
+      // 2. Устанавливаем дату
+      document.getElementById('date').value = selectedDate;
+      
+      // 3. Показываем лоадер на время загрузки данных
+      showLoader();
+      
+      // 4. Загружаем данные СРАЗУ (не в фоне)
+      loadDataForDate(selectedDate);
+      
+      // 5. Загружаем шрифт асинхронно
+      loadFontsAsync();
+    });
+
+    function loadFontsAsync() {
+      const link = document.createElement('link');
+      link.href = 'https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap';
+      link.rel = 'stylesheet';
+      link.onload = function() {
+        document.documentElement.classList.add('fonts-loaded');
+      };
+      document.head.appendChild(link);
+    }
+
     function showLoader() {
       document.getElementById("loader").style.display = "flex";
     }
@@ -734,7 +784,116 @@
       document.getElementById("loader").style.display = "none";
     }
 
-    // Функция для обновления состояния кнопки анализа
+    // БЫСТРАЯ ГЕНЕРАЦИЯ КАРТОЧЕК С ИНДИКАТОРОМ ЗАГРУЗКИ
+    function generateMachineCells() {
+      const grid = document.getElementById('machinesGrid');
+      let html = '';
+      
+      for (let i = 0; i < 14; i++) {
+        html += `
+          <div class="machine-cell loading" onclick="incrementMachine(${i})">
+            <div class="machine-number">LANE ${i + 1}</div>
+            <div class="error-count zero" style="opacity:0">0</div>
+          </div>
+        `;
+      }
+      grid.innerHTML = html;
+    }
+
+    // ОБНОВЛЕНИЕ ОТОБРАЖЕНИЯ КАРТОЧЕК С ДАННЫМИ
+    function updateDisplay() {
+      const cells = document.querySelectorAll('.machine-cell');
+      cells.forEach((cell, index) => {
+        // Убираем индикатор загрузки
+        cell.classList.remove('loading');
+        
+        const countElement = cell.querySelector('.error-count');
+        countElement.textContent = machineErrors[index];
+        countElement.style.opacity = '1';
+        
+        if (machineErrors[index] === 0) {
+          countElement.className = 'error-count zero';
+        } else {
+          countElement.className = 'error-count non-zero';
+        }
+      });
+    }
+
+    function incrementMachine(index) {
+      machineErrors[index]++;
+      updateDisplay();
+      if (errorsChart && analyticsLoaded && isAnalysisOpen) {
+        updateCharts();
+      }
+    }
+
+    // ОПТИМИЗИРОВАННАЯ ЗАГРУЗКА ДАННЫХ - ТЕПЕРЬ ЖДЕМ ДАННЫЕ
+    async function loadDataForDate(date) {
+      try {
+        // Показываем индикатор загрузки на карточках
+        showCardsLoadingState(true);
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000); // Увеличил таймаут
+        
+        const response = await fetch(`${BACKEND_URL}?date=${encodeURIComponent(date)}`, {
+          signal: controller.signal,
+          headers: { 'Accept': 'application/json' },
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (response.ok) {
+          const data = await response.json();
+          
+          if (data.errors) {
+            machineErrors = data.errors;
+            originalErrors = [...data.errors];
+            updateDisplay(); // ОБНОВЛЯЕМ КАРТОЧКИ С ДАННЫМИ
+          }
+          
+          if (data.chartData) {
+            machineFPS = data.chartData.fps || Array(14).fill(0);
+          }
+          
+          if (data.totalStats) {
+            monthlyErrors = data.totalStats.errors || 0;
+            monthlyFPS = data.totalStats.fps || 0;
+            updateStats();
+          }
+          
+          isDataLoaded = true;
+          hideLoader();
+          showCardsLoadingState(false);
+          
+        } else {
+          throw new Error('Ошибка сервера');
+        }
+      } catch (error) {
+        console.log('Ошибка загрузки данных:', error);
+        // Если ошибка - используем данные по умолчанию, но все равно обновляем карточки
+        updateDisplay();
+        hideLoader();
+        showCardsLoadingState(false);
+      }
+    }
+
+    // ФУНКЦИЯ ДЛЯ ПОКАЗА/СКРЫТИЯ ИНДИКАТОРА ЗАГРУЗКИ НА КАРТОЧКАХ
+    function showCardsLoadingState(show) {
+      const cells = document.querySelectorAll('.machine-cell');
+      cells.forEach(cell => {
+        if (show) {
+          cell.classList.add('loading');
+          const countElement = cell.querySelector('.error-count');
+          countElement.style.opacity = '0';
+        } else {
+          cell.classList.remove('loading');
+          const countElement = cell.querySelector('.error-count');
+          countElement.style.opacity = '1';
+        }
+      });
+    }
+
     function updateAnalysisButtonState(state) {
       const analysisBtn = document.getElementById('analysisBtn');
       analysisBtn.classList.remove('loading', 'success', 'pulse');
@@ -742,11 +901,9 @@
       switch(state) {
         case 'loading':
           analysisBtn.classList.add('loading');
-          
           break;
         case 'success':
           analysisBtn.classList.add('success');
-          // Через 2 секунды возвращаем обычное состояние
           setTimeout(() => {
             if (isAnalysisOpen) {
               analysisBtn.classList.remove('success');
@@ -757,7 +914,6 @@
         case 'pulse':
           analysisBtn.classList.add('pulse');
           break;
-          
         default:
           if (isAnalysisOpen) {
             analysisBtn.innerHTML = '<span class="btn-text">СКРЫТЬ АНАЛИЗ</span>';
@@ -767,20 +923,17 @@
       }
     }
 
-    // Функция для скрытия аналитических элементов
     function hideAnalyticsElements() {
       const chartsContainer = document.getElementById('chartsContainer');
       const statsContainer = document.getElementById('statsContainer');
       const tableContainer = document.getElementById('tableContainer');
       const yearlyComparisonContainer = document.getElementById('yearlyComparisonContainer');
       
-      // Убираем классы анимации
       chartsContainer.classList.remove('loaded');
       statsContainer.classList.remove('loaded');
       tableContainer.classList.remove('loaded');
       yearlyComparisonContainer.classList.remove('loaded');
       
-      // Скрываем элементы после завершения анимации
       setTimeout(() => {
         chartsContainer.style.display = 'none';
         statsContainer.style.display = 'none';
@@ -789,37 +942,31 @@
       }, 300);
     }
 
-    // Функция для показа аналитических элементов
     function showAnalyticsElements() {
       const chartsContainer = document.getElementById('chartsContainer');
       const statsContainer = document.getElementById('statsContainer');
       const tableContainer = document.getElementById('tableContainer');
       const yearlyComparisonContainer = document.getElementById('yearlyComparisonContainer');
       
-      // Показываем контейнеры
       chartsContainer.style.display = 'grid';
       statsContainer.style.display = 'grid';
       tableContainer.style.display = 'block';
       yearlyComparisonContainer.style.display = 'block';
       
-      // Добавляем классы для анимации с небольшой задержкой
       setTimeout(() => {
         chartsContainer.classList.add('loaded');
         statsContainer.classList.add('loaded');
         tableContainer.classList.add('loaded');
         yearlyComparisonContainer.classList.add('loaded');
         
-        // Анимируем появление отдельных элементов с задержкой
         const chartWrappers = document.querySelectorAll('.chart-wrapper');
         const statCards = document.querySelectorAll('.stat-card');
         const dataTable = document.getElementById('dataTable');
         
-        // Сначала убираем класс loaded у всех элементов
         chartWrappers.forEach(wrapper => wrapper.classList.remove('loaded'));
         statCards.forEach(card => card.classList.remove('loaded'));
         dataTable.classList.remove('loaded');
         
-        // Затем добавляем с анимацией
         chartWrappers.forEach((wrapper, index) => {
           setTimeout(() => {
             wrapper.classList.add('loaded');
@@ -835,14 +982,11 @@
         setTimeout(() => {
           dataTable.classList.add('loaded');
         }, 400);
-        
       }, 50);
     }
 
-    // Асинхронная функция для загрузки аналитических данных
     async function loadAnalyticsData() {
       if (analyticsLoaded && isAnalysisOpen) {
-        // Если данные уже загружены и анализ открыт, просто показываем элементы
         showAnalyticsElements();
         return;
       }
@@ -850,33 +994,17 @@
       updateAnalysisButtonState('loading');
       
       try {
-        // Имитируем загрузку для лучшего UX (минимальная задержка)
         await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Загружаем данные таблицы
         await loadTableData();
-        
-        // Загружаем данные для графика сравнения по годам
         await createYearlyComparisonChart();
-        
-        // Создаем основные графики
         createCharts();
-        
-        // Обновляем статистику
         updateStats();
         
-        // Устанавливаем флаг, что данные загружены
         analyticsLoaded = true;
-        
-        // Показываем анимацию успеха
         updateAnalysisButtonState('success');
-        
-        // Показываем аналитические элементы
         showAnalyticsElements();
-        
       } catch (error) {
         console.error('Ошибка при загрузке аналитических данных:', error);
-        // В случае ошибки все равно показываем контент
         analyticsLoaded = true;
         updateAnalysisButtonState('pulse');
         showAnalyticsElements();
@@ -885,27 +1013,21 @@
 
     async function toggleCharts() {
       if (isAnalysisOpen) {
-        // Скрываем аналитические элементы
         hideAnalyticsElements();
         isAnalysisOpen = false;
         updateAnalysisButtonState('default');
       } else {
-        // Добавляем анимацию пульсации при открытии
         updateAnalysisButtonState('pulse');
-        
-        // Загружаем и показываем аналитические данные
         isAnalysisOpen = true;
         await loadAnalyticsData();
       }
     }
 
-    // Обновление статистики
     function updateStats() {
       document.getElementById('totalErrors').textContent = monthlyErrors;
       document.getElementById('totalFPS').textContent = Math.ceil(monthlyFPS);
     }
 
-    // Функция для расчета ошибок за месяц
     function calculateMonthlyErrors() {
       const monthlyErrors = Array(14).fill(0);
       const tableRows = document.querySelectorAll('#tableBody tr');
@@ -921,26 +1043,21 @@
       return monthlyErrors;
     }
 
-    // Загрузка данных таблицы
     async function loadTableData() {
       try {
         const response = await fetch(`${BACKEND_URL}?date=${encodeURIComponent(selectedDate)}`, {
           method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-          },
+          headers: { 'Accept': 'application/json' },
         });
         
-        if (!response.ok) {
-          throw new Error('Ошибка сети');
-        }
+        if (!response.ok) throw new Error('Ошибка сети');
         
         const text = await response.text();
         let data;
         try {
           data = JSON.parse(text);
         } catch (e) {
-          throw new Error('Неверный формат ответа от сервера');
+          throw new Error('Неверный формат ответа');
         }
         
         if (data.tableData) {
@@ -963,18 +1080,14 @@
       }
     }
 
-    // Заполнение таблицы реальными данными (скрываем нули)
     function populateTable(tableData) {
       const tableBody = document.getElementById('tableBody');
       tableBody.innerHTML = '';
       
       tableData.forEach(row => {
-        if (!row.day && row.errors.every(error => error === 0)) {
-          return;
-        }
+        if (!row.day && row.errors.every(error => error === 0)) return;
         
         const tr = document.createElement('tr');
-        
         const dayCell = document.createElement('td');
         dayCell.textContent = row.day;
         dayCell.style.fontWeight = 'bold';
@@ -985,9 +1098,6 @@
           if (error !== 0) {
             errorCell.textContent = error;
             errorCell.className = 'non-zero';
-          } else {
-            errorCell.textContent = '';
-            errorCell.className = '';
           }
           tr.appendChild(errorCell);
         });
@@ -996,14 +1106,12 @@
       });
     }
 
-    // Заполнение таблицы демо-данными (скрываем нули)
     function populateDemoTable() {
       const tableBody = document.getElementById('tableBody');
       tableBody.innerHTML = '';
       
       for (let i = 1; i <= 31; i++) {
         const row = document.createElement('tr');
-        
         const dayCell = document.createElement('td');
         dayCell.textContent = i;
         dayCell.style.fontWeight = 'bold';
@@ -1012,82 +1120,21 @@
         for (let j = 0; j < 14; j++) {
           const dataCell = document.createElement('td');
           const value = Math.floor(Math.random() * 10);
-          
           if (value !== 0) {
             dataCell.textContent = value;
             dataCell.className = 'non-zero';
-          } else {
-            dataCell.textContent = '';
-            dataCell.className = '';
           }
           row.appendChild(dataCell);
         }
-        
         tableBody.appendChild(row);
       }
     }
 
-    document.getElementById('date').value = selectedDate;
-    
-    function generateMachineCells() {
-      const grid = document.getElementById('machinesGrid');
-      grid.innerHTML = '';
-      
-      machineErrors.forEach((count, index) => {
-        const cell = document.createElement('div');
-        cell.className = 'machine-cell';
-        
-        const errorCountClass = count === 0 ? 'error-count zero' : 'error-count non-zero';
-        
-        cell.innerHTML = `
-          <div class="machine-number">LANE ${index + 1}</div>
-          <div class="${errorCountClass}">${count}</div>
-        `;
-        cell.addEventListener('click', () => {
-          incrementMachine(index);
-        });
-        grid.appendChild(cell);
-      });
-    }
-    
-    function incrementMachine(index) {
-      machineErrors[index]++;
-      updateDisplay();
-      if (errorsChart && analyticsLoaded && isAnalysisOpen) {
-        updateCharts();
-      }
-    }
-    
-    function cancelChanges() {
-      if (confirm('Отменить все несохраненные изменения?')) {
-        showLoader();
-        loadDataForDate(selectedDate);
-      }
-    }
-    
-    function updateDisplay() {
-      const cells = document.querySelectorAll('.machine-cell');
-      cells.forEach((cell, index) => {
-        const countElement = cell.querySelector('.error-count');
-        countElement.textContent = machineErrors[index];
-        
-        if (machineErrors[index] === 0) {
-          countElement.className = 'error-count zero';
-        } else {
-          countElement.className = 'error-count non-zero';
-        }
-      });
-    }
-    
     function createCharts() {
       const machineNumbers = Array.from({length: 14}, (_, i) => `${i + 1}`);
       
-      if (errorsChart) {
-        errorsChart.destroy();
-      }
-      if (fpsChart) {
-        fpsChart.destroy();
-      }
+      if (errorsChart) errorsChart.destroy();
+      if (fpsChart) fpsChart.destroy();
       
       const monthlyErrorsData = calculateMonthlyErrors();
       
@@ -1103,56 +1150,17 @@
             borderWidth: 1,
             borderRadius: 5,
             barPercentage: 0.7,
-            categoryPercentage: 0.8
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: true,
-          plugins: {
-            legend: {
-              display: false
-            },
-            tooltip: {
-              callbacks: {
-                title: function(tooltipItems) {
-                  return `Lane ${tooltipItems[0].label}`;
-                },
-                label: function(context) {
-                  return ` ${context.raw}`;
-                }
-              }
-            }
-          },
+          plugins: { legend: { display: false } },
           scales: {
-            y: {
-              beginAtZero: true,
-              grid: {
-                color: 'rgba(0, 0, 0, 0.05)'
-              },
-              ticks: {
-                display: false
-              },
-              title: {
-                display: false
-              }
-            },
-            x: {
-              grid: {
-                display: false
-              },
-              ticks: {
-                display: true
-              },
-              title: {
-                display: false
-              }
-            }
+            y: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' }, ticks: { display: false } },
+            x: { grid: { display: false } }
           },
-          animation: {
-            duration: 1000,
-            easing: 'easeOutQuart'
-          }
+          animation: { duration: 1000, easing: 'easeOutQuart' }
         }
       });
       
@@ -1168,90 +1176,38 @@
             borderWidth: 1,
             borderRadius: 5,
             barPercentage: 0.7,
-            categoryPercentage: 0.8
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: true,
-          plugins: {
-            legend: {
-              display: false
-            },
-            tooltip: {
-              callbacks: {
-                title: function(tooltipItems) {
-                  return `Lane ${tooltipItems[0].label}`;
-                },
-                label: function(context) {
-                  return ` ${Math.ceil(context.raw)}`;
-                }
-              }
-            }
-          },
+          plugins: { legend: { display: false } },
           scales: {
-            y: {
-              beginAtZero: true,
-              grid: {
-                color: 'rgba(0, 0, 0, 0.05)'
-              },
-              ticks: {
-                display: false
-              },
-              title: {
-                display: false
-              }
-            },
-            x: {
-              grid: {
-                display: false
-              },
-              ticks: {
-                display: true
-              },
-              title: {
-                display: false
-              }
-            }
+            y: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' }, ticks: { display: false } },
+            x: { grid: { display: false } }
           },
-          animation: {
-            duration: 1000,
-            easing: 'easeOutQuart'
-          }
+          animation: { duration: 1000, easing: 'easeOutQuart' }
         }
       });
     }
-    
-    // Новая функция для загрузки данных сравнения по годам
+
     async function loadYearlyComparisonData() {
       try {
         const response = await fetch(`${BACKEND_URL}?yearlyComparison=true`, {
           method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-          },
+          headers: { 'Accept': 'application/json' },
         });
         
-        if (!response.ok) {
-          throw new Error('Ошибка сети при загрузке данных сравнения');
-        }
+        if (!response.ok) throw new Error('Ошибка сети');
         
         const text = await response.text();
-        let data;
-        try {
-          data = JSON.parse(text);
-        } catch (e) {
-          throw new Error('Неверный формат ответа от сервера');
-        }
-        
-        return data;
+        return JSON.parse(text);
       } catch (error) {
-        console.error('Ошибка при загрузке данных сравнения по годам:', error);
+        console.error('Ошибка при загрузке данных сравнения:', error);
         return getDemoYearlyData();
       }
     }
     
-    // Функция для получения демо-данных (если реальные данные недоступны)
     function getDemoYearlyData() {
       const currentYear = new Date().getFullYear();
       return {
@@ -1264,22 +1220,14 @@
       };
     }
     
-    // Обновленная функция создания графика сравнения по годам с обрывами на нулях
     async function createYearlyComparisonChart() {
       const yearlyComparisonCtx = document.getElementById('yearlyComparisonChart');
-      
-      // Убедимся, что canvas имеет правильные размеры
       yearlyComparisonCtx.style.width = '100%';
       yearlyComparisonCtx.style.height = '100%';
       
-      // Загружаем данные с сервера
       const yearlyData = await loadYearlyComparisonData();
-      
-      // Создаем датасеты для каждого года
       const datasets = yearlyData.years.map((year, index) => {
         const hue = index * 60 % 360;
-        
-        // Преобразуем данные: заменяем нули на null для обрыва линии
         const dataWithNulls = (yearlyData.data[year] || Array(12).fill(0)).map(value => 
           value === 0 ? null : value
         );
@@ -1292,79 +1240,46 @@
           borderWidth: 2,
           fill: false,
           tension: 0.4,
-          spanGaps: false // Важно: не соединять промежутки
+          spanGaps: false
         };
       });
       
-      // Уничтожаем предыдущий график, если он существует
-      if (yearlyComparisonChart) {
-        yearlyComparisonChart.destroy();
-      }
+      if (yearlyComparisonChart) yearlyComparisonChart.destroy();
       
       yearlyComparisonChart = new Chart(yearlyComparisonCtx, {
         type: 'line',
-        data: {
-          labels: yearlyData.months,
-          datasets: datasets
-        },
+        data: { labels: yearlyData.months, datasets: datasets },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          layout: {
-            padding: {
-              bottom: 30
-            }
-          },
+          layout: { padding: { bottom: 30 } },
           plugins: {
-            legend: {
-              position: 'top',
-            },
-            title: {
-              display: false
-            },
+            legend: { position: 'top' },
             tooltip: {
               callbacks: {
                 label: function(context) {
-                  // Скрываем тултипы для нулевых значений
                   return context.raw === null ? 'Нет данных' : ` ${context.raw}`;
                 }
               }
             }
           },
           scales: {
-            x: {
-              ticks: {
-                padding: 10,
-                maxRotation: 45,
-                autoSkip: true
-              }
-            },
-            y: {
+            x: { ticks: { padding: 10, maxRotation: 45, autoSkip: true } },
+            y: { 
               beginAtZero: true,
-              ticks: {
-                callback: function(value) {
-                  // Не показываем 0 на оси Y если хотим скрыть нулевые значения полностью
-                  return value === 0 ? '' : value;
-                }
-              }
+              ticks: { callback: function(value) { return value === 0 ? '' : value; } }
             }
           },
           elements: {
             point: {
-              radius: function(context) {
-                // Скрываем точки для нулевых значений
-                return context.raw === null ? 0 : 3;
-              },
-              hoverRadius: function(context) {
-                return context.raw === null ? 0 : 5;
-              }
+              radius: function(context) { return context.raw === null ? 0 : 3; },
+              hoverRadius: function(context) { return context.raw === null ? 0 : 5; }
             }
           }
         }
       });
     }
     
-    // Функция для обновления данных графика с обрывами на нулях
     function updateYearlyComparisonChart() {
       if (yearlyComparisonChart) {
         yearlyComparisonChart.data.datasets.forEach(dataset => {
@@ -1390,10 +1305,7 @@
       showLoader();
       
       try {
-        const changes = machineErrors.map((current, index) => {
-          return current - originalErrors[index];
-        });
-        
+        const changes = machineErrors.map((current, index) => current - originalErrors[index]);
         const hasChanges = changes.some(change => change !== 0);
         
         if (!hasChanges) {
@@ -1407,9 +1319,7 @@
         
         const response = await fetch(BACKEND_URL, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: formData
         });
         
@@ -1418,28 +1328,19 @@
         try {
           result = JSON.parse(text);
         } catch (e) {
-          throw new Error('Неверный формат ответа от сервера');
+          throw new Error('Неверный формат ответа');
         }
         
         if (result.success) {
           originalErrors = [...machineErrors];
-          
           await loadDataForDate(selectedDate);
           
-          // Обновляем аналитические данные, если они уже загружены
           if (analyticsLoaded && isAnalysisOpen) {
-            if (errorsChart && fpsChart) {
-              updateCharts();
-            }
+            if (errorsChart && fpsChart) updateCharts();
             await loadTableData();
             updateStats();
-            
-            // Обновляем график сравнения по годам
-            if (yearlyComparisonChart) {
-              updateYearlyComparisonChart();
-            }
+            if (yearlyComparisonChart) updateYearlyComparisonChart();
           }
-          
         } else {
           throw new Error(result.error || 'Ошибка при сохранении');
         }
@@ -1451,109 +1352,15 @@
       }
     }
     
-    async function loadDataForDate(date) {
-      showLoader();
-      
-      try {
-        const response = await fetch(`${BACKEND_URL}?date=${encodeURIComponent(date)}`, {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-          },
-        });
-        
-        if (!response.ok) {
-          throw new Error('Ошибка сети');
-        }
-        
-        const text = await response.text();
-        let data;
-        try {
-          data = JSON.parse(text);
-        } catch (e) {
-          throw new Error('Неверный формат ответа от сервера');
-        }
-        
-        if (data.errors) {
-          machineErrors = data.errors;
-          originalErrors = [...data.errors];
-        } else {
-          const savedData = localStorage.getItem(`errors_${date}`);
-          if (savedData) {
-            const localData = JSON.parse(savedData);
-            machineErrors = localData.errors;
-            originalErrors = [...localData.errors];
-          } else {
-            machineErrors = Array(14).fill(0);
-            originalErrors = Array(14).fill(0);
-          }
-        }
-        
-        if (data.chartData) {
-          machineFPS = data.chartData.fps || Array(14).fill(0);
-        }
-        
-        if (data.totalStats) {
-          monthlyErrors = data.totalStats.errors || 0;
-          monthlyFPS = data.totalStats.fps || 0;
-        }
-        
-        updateDisplay();
-        updateStats();
-        
-        // Обновляем аналитические данные, если они уже загружены и открыты
-        if (analyticsLoaded && isAnalysisOpen) {
-          if (data.tableData) {
-            populateTable(data.tableData);
-          } else {
-            populateDemoTable();
-          }
-          
-          if (errorsChart && fpsChart) {
-            updateCharts();
-          }
-          
-          // Обновляем график сравнения по годам
-          if (yearlyComparisonChart) {
-            updateYearlyComparisonChart();
-          }
-        }
-      } catch (error) {
-        console.error('Ошибка при загрузке данных:', error);
-        
-        const savedData = localStorage.getItem(`errors_${date}`);
-        if (savedData) {
-          const localData = JSON.parse(savedData);
-          machineErrors = localData.errors;
-          originalErrors = [...localData.errors];
-        } else {
-          machineErrors = Array(14).fill(0);
-          originalErrors = Array(14).fill(0);
-        }
-        
-        updateDisplay();
-        
-        // Обновляем аналитические данные, если они уже загружены и открыты
-        if (analyticsLoaded && isAnalysisOpen) {
-          populateDemoTable();
-          if (errorsChart && fpsChart) {
-            updateCharts();
-          }
-          
-          // Обновляем график сравнения по годам
-          if (yearlyComparisonChart) {
-            updateYearlyComparisonChart();
-          }
-        }
-      } finally {
-        hideLoader();
+    function cancelChanges() {
+      if (confirm('Отменить все несохраненные изменения?')) {
+        showLoader();
+        loadDataForDate(selectedDate);
       }
     }
     
     document.getElementById('date').addEventListener('change', function(e) {
-      const hasUnsavedChanges = machineErrors.some((current, index) => {
-        return current !== originalErrors[index];
-      });
+      const hasUnsavedChanges = machineErrors.some((current, index) => current !== originalErrors[index]);
       
       if (hasUnsavedChanges) {
         if (!confirm('У вас есть несохраненные изменения. Перейти к другой дате без сохранения?')) {
@@ -1563,7 +1370,7 @@
       }
       
       selectedDate = e.target.value;
-      analyticsLoaded = false; // Сбрасываем флаг загрузки аналитики
+      analyticsLoaded = false;
       isAnalysisOpen = false;
       updateAnalysisButtonState('default');
       loadDataForDate(selectedDate);
@@ -1574,9 +1381,7 @@
       dropdown.style.display = (dropdown.style.display === "block") ? "none" : "block";
       
       const menu = document.getElementById("dropdownMenu");
-      if (menu.style.display === "flex") {
-        menu.style.display = "none";
-      }
+      if (menu.style.display === "flex") menu.style.display = "none";
       
       event.stopPropagation();
     }
@@ -1586,9 +1391,7 @@
       menu.style.display = (menu.style.display === "flex") ? "none" : "flex";
       
       const dropdown = document.getElementById("siteNameDropdown");
-      if (dropdown.style.display === "block") {
-        dropdown.style.display = "none";
-      }
+      if (dropdown.style.display === "block") dropdown.style.display = "none";
       
       event.stopPropagation();
     }
@@ -1607,22 +1410,13 @@
     });
     
     window.addEventListener('beforeunload', function(e) {
-      const hasUnsavedChanges = machineErrors.some((current, index) => {
-        return current !== originalErrors[index];
-      });
+      const hasUnsavedChanges = machineErrors.some((current, index) => current !== originalErrors[index]);
       
       if (hasUnsavedChanges) {
         e.preventDefault();
         e.returnValue = 'У вас есть несохраненные изменения. Вы уверены, что хотите уйти?';
         return e.returnValue;
       }
-    });
-    
-    document.addEventListener('DOMContentLoaded', function() {
-      showLoader();
-      generateMachineCells();
-      loadDataForDate(selectedDate);
-      updateStats();
     });
   </script>
 </body>
