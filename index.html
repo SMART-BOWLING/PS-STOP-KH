@@ -1059,47 +1059,40 @@
         yearlyComparisonChart.destroy();
       }
       
-yearlyComparisonChart = new Chart(yearlyComparisonCtx, {
-  type: 'line',
-  data: {
-    labels: yearlyData.months,
-    datasets: datasets
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false, // Важно для контроля высоты
-    plugins: {
-      legend: {
-        position: 'top',
-      },
-      title: {
-        display: true,
-        font: {
-          size: 18
+это ту  ?       yearlyComparisonChart = new Chart(yearlyComparisonCtx, {
+        type: 'line',
+        data: {
+          labels: yearlyData.months,
+          datasets: datasets
         },
-        padding: {
-          top: 10,
-          bottom: 20
+        options: {
+          responsive: true,
+          maintainAspectRatio: false, // Важно для контроля высоты
+          plugins: {
+            legend: {
+              position: 'top',
+            },
+            title: {
+              display: false,
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+              }
+            },
+            x: {
+              title: {
+                display: true,
+              }
+            }
+          }
         }
-      }
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        title: {
-          display: true,
-        }
-      },
-      x: {
-        title: {
-          display: true,
-        }
-      }
+      });
     }
-  }
-});
-
-  }  
+    
     function updateCharts() {
       if (errorsChart) {
         errorsChart.data.datasets[0].data = calculateMonthlyErrors();
