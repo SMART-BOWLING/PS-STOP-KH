@@ -1305,7 +1305,7 @@ options: {
   maintainAspectRatio: false,
   layout: {
     padding: {
-      bottom: 30 // 👉 добавляем больше места снизу
+      bottom: 30
     }
   },
   plugins: {
@@ -1313,14 +1313,13 @@ options: {
       position: 'top',
     },
     title: {
-      display: true,
-      text: 'Сравнение по годам'
+      display: false  // 👈 скрываем заголовок
     }
   },
   scales: {
     x: {
       ticks: {
-        padding: 10, // 👉 отодвигаем подписи чуть ниже
+        padding: 10,
         maxRotation: 45,
         autoSkip: true
       }
