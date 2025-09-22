@@ -207,6 +207,12 @@
       text-align: center;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       touch-action: manipulation;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .machine-cell:active {
+      transform: scale(0.98);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
     }
     
     .machine-number {
@@ -242,8 +248,14 @@
       font-size: 16px;
       font-weight: 600;
       cursor: pointer;
-      transition: background-color 0.2s;
+      transition: all 0.3s ease;
       min-height: 44px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    button:active {
+      transform: scale(0.98);
     }
     
     .cancel-btn {
@@ -251,17 +263,9 @@
       color: white;
     }
     
-    .cancel-btn:active {
-      background: #dc143c;
-    }
-    
     .save-btn {
       background: #1a2f40;
       color: white;
-    }
-    
-    .save-btn:active {
-      background: #1a2f40;
     }
     
     .analysis-btn {
@@ -270,6 +274,70 @@
       margin-top: 10px;
       width: 100%;
       border: 1px solid #ddd;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.4s ease;
+    }
+    
+    /* Анимация загрузки для кнопки анализа */
+    .analysis-btn.loading {
+      color: transparent;
+      pointer-events: none;
+    }
+    
+    .analysis-btn.loading::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 20px;
+      height: 20px;
+      margin: -10px 0 0 -10px;
+      border: 2px solid transparent;
+      border-top: 2px solid #dc143c;
+      border-radius: 50%;
+      animation: buttonSpin 0.8s linear infinite;
+    }
+    
+    .analysis-btn.loading::before {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #dc143c;
+      font-weight: 600;
+    }
+    
+    @keyframes buttonSpin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    /* Анимация успешной загрузки */
+    .analysis-btn.success {
+      background: #4CAF50;
+      color: white;
+      border-color: #4CAF50;
+    }
+    
+    .analysis-btn.success::after {
+      content: '✓';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 20px;
+    }
+    
+    /* Пульсирующая анимация при открытии */
+    .analysis-btn.pulse {
+      animation: pulse 0.5s ease-in-out;
+    }
+    
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
     }
     
     .charts-container {
@@ -277,6 +345,12 @@
       grid-template-columns: 1fr;
       gap: 20px;
       margin-top: 30px;
+      opacity: 0;
+      transition: opacity 0.5s ease-in-out;
+    }
+    
+    .charts-container.loaded {
+      opacity: 1;
     }
     
     .chart-wrapper {
@@ -284,6 +358,14 @@
       padding: 15px;
       border-radius: 15px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+    }
+    
+    .chart-wrapper.loaded {
+      opacity: 1;
+      transform: translateY(0);
     }
     
     .chart-title {
@@ -295,11 +377,16 @@
     
     /* Стили для карточек статистики */
     .stats-container {
-      display: grid;
+      display: none;
       grid-template-columns: 1fr;
       gap: 15px;
       margin-top: 20px;
-      display: none;
+      opacity: 0;
+      transition: opacity 0.5s ease-in-out;
+    }
+    
+    .stats-container.loaded {
+      opacity: 1;
     }
     
     .stat-card {
@@ -308,6 +395,14 @@
       border-radius: 15px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       text-align: center;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+    }
+    
+    .stat-card.loaded {
+      opacity: 1;
+      transform: translateY(0);
     }
     
     .stat-title {
@@ -334,6 +429,12 @@
       display: none;
       margin-top: 20px;
       width: 100%;
+      opacity: 0;
+      transition: opacity 0.5s ease-in-out;
+    }
+    
+    .table-container.loaded {
+      opacity: 1;
     }
     
     .data-table {
@@ -345,6 +446,14 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       font-size: 11px;
       table-layout: fixed;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+    }
+    
+    .data-table.loaded {
+      opacity: 1;
+      transform: translateY(0);
     }
     
     .data-table th, .data-table td {
@@ -392,7 +501,13 @@
       border-radius: 15px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       position: relative;
-      height: 600px; /* Фиксированная высота для контейнера */
+      height: 600px;
+      opacity: 0;
+      transition: opacity 0.5s ease-in-out;
+    }
+    
+    .yearly-comparison-container.loaded {
+      opacity: 1;
     }
     
     @media (min-width: 768px) {
@@ -417,7 +532,7 @@
       }
       
       .yearly-comparison-container {
-        height: 350px; /* Меньшая высота для больших экранов */
+        height: 350px;
       }
     }
     
@@ -463,10 +578,14 @@
         padding: 3px;
       }
       
-      /* Улучшенные стили для мобильных устройств */
       .yearly-comparison-container {
-        height: 300px; /* Увеличиваем высоту для мобильных устройств */
+        height: 300px;
         padding: 10px;
+      }
+      
+      .analysis-btn.loading::before {
+        font-size: 14px;
+        content: 'ЗАГРУЗКА';
       }
     }
 
@@ -488,7 +607,7 @@
       }
       
       .yearly-comparison-container {
-        height: 320px; /* Еще больше увеличиваем высоту для очень маленьких экранов */
+        height: 320px;
       }
     }
 
@@ -543,14 +662,16 @@
       <button class="save-btn" onclick="saveData()">Сохранить</button>
     </div>
     
-    <button class="analysis-btn" onclick="toggleCharts()">АНАЛИЗ</button>
+    <button class="analysis-btn" id="analysisBtn" onclick="toggleCharts()">
+      <span class="btn-text">АНАЛИЗ</span>
+    </button>
     
     <div class="charts-container" id="chartsContainer">
-      <div class="chart-wrapper">
+      <div class="chart-wrapper" id="errorsChartWrapper">
         <div class="chart-title">ОБЩЕЕ КОЛИЧЕСТВО ОШИБОК ЗА МЕСЯЦ</div>
         <canvas id="errorsChart"></canvas>
       </div>
-      <div class="chart-wrapper">
+      <div class="chart-wrapper" id="fpsChartWrapper">
         <div class="chart-title">FPS - КОЛИЧЕСТВО ФРЕЙМОВ НА ОДНУ ОШИБКУ</div>
         <canvas id="fpsChart"></canvas>
       </div>
@@ -558,18 +679,18 @@
     
     <!-- Контейнер для карточек статистики -->
     <div class="stats-container" id="statsContainer">
-      <div class="stat-card">
+      <div class="stat-card" id="errorsStatCard">
         <div class="stat-title">Общее количество ошибок за месяц</div>
         <div class="stat-value errors-stat" id="totalErrors">0</div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card" id="fpsStatCard">
         <div class="stat-title">Общее число FPS за месяц</div>
         <div class="stat-value fps-stat" id="totalFPS">0</div>
       </div>
     </div>
     
     <div class="table-container" id="tableContainer">
-      <table class="data-table">
+      <table class="data-table" id="dataTable">
         <thead>
           <tr>
             <th>День</th>
@@ -617,6 +738,10 @@
     let monthlyErrors = 0;
     let monthlyFPS = 0;
     
+    // Флаг для отслеживания состояния загрузки аналитических данных
+    let analyticsLoaded = false;
+    let isAnalysisOpen = false;
+    
     function showLoader() {
       document.getElementById("loader").style.display = "flex";
     }
@@ -625,34 +750,166 @@
       document.getElementById("loader").style.display = "none";
     }
 
-    function toggleCharts() {
+    // Функция для обновления состояния кнопки анализа
+    function updateAnalysisButtonState(state) {
+      const analysisBtn = document.getElementById('analysisBtn');
+      analysisBtn.classList.remove('loading', 'success', 'pulse');
+      
+      switch(state) {
+        case 'loading':
+          analysisBtn.classList.add('loading');
+          break;
+        case 'success':
+          analysisBtn.classList.add('success');
+          // Через 2 секунды возвращаем обычное состояние
+          setTimeout(() => {
+            if (isAnalysisOpen) {
+              analysisBtn.classList.remove('success');
+              analysisBtn.innerHTML = '<span class="btn-text">СКРЫТЬ АНАЛИЗ</span>';
+            }
+          }, 2000);
+          break;
+        case 'pulse':
+          analysisBtn.classList.add('pulse');
+          break;
+        default:
+          if (isAnalysisOpen) {
+            analysisBtn.innerHTML = '<span class="btn-text">СКРЫТЬ АНАЛИЗ</span>';
+          } else {
+            analysisBtn.innerHTML = '<span class="btn-text">АНАЛИЗ</span>';
+          }
+      }
+    }
+
+    // Функция для скрытия аналитических элементов
+    function hideAnalyticsElements() {
       const chartsContainer = document.getElementById('chartsContainer');
       const statsContainer = document.getElementById('statsContainer');
       const tableContainer = document.getElementById('tableContainer');
       const yearlyComparisonContainer = document.getElementById('yearlyComparisonContainer');
       
-      if (chartsContainer.style.display === 'grid') {
+      // Убираем классы анимации
+      chartsContainer.classList.remove('loaded');
+      statsContainer.classList.remove('loaded');
+      tableContainer.classList.remove('loaded');
+      yearlyComparisonContainer.classList.remove('loaded');
+      
+      // Скрываем элементы после завершения анимации
+      setTimeout(() => {
         chartsContainer.style.display = 'none';
         statsContainer.style.display = 'none';
         tableContainer.style.display = 'none';
         yearlyComparisonContainer.style.display = 'none';
+      }, 300);
+    }
+
+    // Функция для показа аналитических элементов
+    function showAnalyticsElements() {
+      const chartsContainer = document.getElementById('chartsContainer');
+      const statsContainer = document.getElementById('statsContainer');
+      const tableContainer = document.getElementById('tableContainer');
+      const yearlyComparisonContainer = document.getElementById('yearlyComparisonContainer');
+      
+      // Показываем контейнеры
+      chartsContainer.style.display = 'grid';
+      statsContainer.style.display = 'grid';
+      tableContainer.style.display = 'block';
+      yearlyComparisonContainer.style.display = 'block';
+      
+      // Добавляем классы для анимации с небольшой задержкой
+      setTimeout(() => {
+        chartsContainer.classList.add('loaded');
+        statsContainer.classList.add('loaded');
+        tableContainer.classList.add('loaded');
+        yearlyComparisonContainer.classList.add('loaded');
+        
+        // Анимируем появление отдельных элементов с задержкой
+        const chartWrappers = document.querySelectorAll('.chart-wrapper');
+        const statCards = document.querySelectorAll('.stat-card');
+        const dataTable = document.getElementById('dataTable');
+        
+        // Сначала убираем класс loaded у всех элементов
+        chartWrappers.forEach(wrapper => wrapper.classList.remove('loaded'));
+        statCards.forEach(card => card.classList.remove('loaded'));
+        dataTable.classList.remove('loaded');
+        
+        // Затем добавляем с анимацией
+        chartWrappers.forEach((wrapper, index) => {
+          setTimeout(() => {
+            wrapper.classList.add('loaded');
+          }, index * 200);
+        });
+        
+        statCards.forEach((card, index) => {
+          setTimeout(() => {
+            card.classList.add('loaded');
+          }, index * 200);
+        });
+        
+        setTimeout(() => {
+          dataTable.classList.add('loaded');
+        }, 400);
+        
+      }, 50);
+    }
+
+    // Асинхронная функция для загрузки аналитических данных
+    async function loadAnalyticsData() {
+      if (analyticsLoaded && isAnalysisOpen) {
+        // Если данные уже загружены и анализ открыт, просто показываем элементы
+        showAnalyticsElements();
+        return;
+      }
+      
+      updateAnalysisButtonState('loading');
+      
+      try {
+        // Имитируем загрузку для лучшего UX (минимальная задержка)
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Загружаем данные таблицы
+        await loadTableData();
+        
+        // Загружаем данные для графика сравнения по годам
+        await createYearlyComparisonChart();
+        
+        // Создаем основные графики
+        createCharts();
+        
+        // Обновляем статистику
+        updateStats();
+        
+        // Устанавливаем флаг, что данные загружены
+        analyticsLoaded = true;
+        
+        // Показываем анимацию успеха
+        updateAnalysisButtonState('success');
+        
+        // Показываем аналитические элементы
+        showAnalyticsElements();
+        
+      } catch (error) {
+        console.error('Ошибка при загрузке аналитических данных:', error);
+        // В случае ошибки все равно показываем контент
+        analyticsLoaded = true;
+        updateAnalysisButtonState('pulse');
+        showAnalyticsElements();
+      }
+    }
+
+    async function toggleCharts() {
+      if (isAnalysisOpen) {
+        // Скрываем аналитические элементы
+        hideAnalyticsElements();
+        isAnalysisOpen = false;
+        updateAnalysisButtonState('default');
       } else {
-        chartsContainer.style.display = 'grid';
-        statsContainer.style.display = 'grid';
-        tableContainer.style.display = 'block';
-        yearlyComparisonContainer.style.display = 'block';
+        // Добавляем анимацию пульсации при открытии
+        updateAnalysisButtonState('pulse');
         
-        // Создаем графики, если они еще не созданы
-        if (!errorsChart || !fpsChart) {
-          createCharts();
-        }
-        
-        // Создаем график сравнения по годам, если он еще не создан
-        if (!yearlyComparisonChart) {
-          createYearlyComparisonChart();
-        }
-        
-        loadTableData(); // Загружаем данные таблицы при открытии
+        // Загружаем и показываем аналитические данные
+        isAnalysisOpen = true;
+        await loadAnalyticsData();
       }
     }
 
@@ -702,9 +959,6 @@
         
         if (data.tableData) {
           populateTable(data.tableData);
-          if (errorsChart && fpsChart) {
-            updateCharts();
-          }
         } else {
           populateDemoTable();
         }
@@ -716,11 +970,6 @@
         if (data.totalStats) {
           monthlyErrors = data.totalStats.errors || 0;
           monthlyFPS = data.totalStats.fps || 0;
-          updateStats();
-        }
-        
-        if (errorsChart && fpsChart) {
-          updateCharts();
         }
       } catch (error) {
         console.error('Ошибка при загрузке данных таблицы:', error);
@@ -818,7 +1067,7 @@
     function incrementMachine(index) {
       machineErrors[index]++;
       updateDisplay();
-      if (errorsChart) {
+      if (errorsChart && analyticsLoaded && isAnalysisOpen) {
         updateCharts();
       }
     }
@@ -1067,7 +1316,7 @@
         },
         options: {
           responsive: true,
-          maintainAspectRatio: false, // Важно для контроля высоты
+          maintainAspectRatio: false,
           plugins: {
             legend: {
               position: 'top',
@@ -1145,11 +1394,13 @@
           
           await loadDataForDate(selectedDate);
           
-          if (document.getElementById('tableContainer').style.display === 'block') {
+          // Обновляем аналитические данные, если они уже загружены
+          if (analyticsLoaded && isAnalysisOpen) {
             if (errorsChart && fpsChart) {
               updateCharts();
             }
-            loadTableData();
+            await loadTableData();
+            updateStats();
           }
           
         } else {
@@ -1213,7 +1464,8 @@
         updateDisplay();
         updateStats();
         
-        if (document.getElementById('tableContainer').style.display === 'block') {
+        // Обновляем аналитические данные, если они уже загружены и открыты
+        if (analyticsLoaded && isAnalysisOpen) {
           if (data.tableData) {
             populateTable(data.tableData);
           } else {
@@ -1239,12 +1491,12 @@
         
         updateDisplay();
         
-        if (document.getElementById('tableContainer').style.display === 'block') {
+        // Обновляем аналитические данные, если они уже загружены и открыты
+        if (analyticsLoaded && isAnalysisOpen) {
           populateDemoTable();
-        }
-        
-        if (errorsChart && fpsChart) {
-          updateCharts();
+          if (errorsChart && fpsChart) {
+            updateCharts();
+          }
         }
       } finally {
         hideLoader();
@@ -1264,6 +1516,9 @@
       }
       
       selectedDate = e.target.value;
+      analyticsLoaded = false; // Сбрасываем флаг загрузки аналитики
+      isAnalysisOpen = false;
+      updateAnalysisButtonState('default');
       loadDataForDate(selectedDate);
     });
 
