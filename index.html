@@ -391,6 +391,8 @@
       padding: 15px;
       border-radius: 15px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      position: relative;
+      height: 400px; /* Фиксированная высота для контейнера */
     }
     
     @media (min-width: 768px) {
@@ -412,6 +414,10 @@
       
       .data-table th, .data-table td {
         padding: 5px;
+      }
+      
+      .yearly-comparison-container {
+        height: 350px; /* Меньшая высота для больших экранов */
       }
     }
     
@@ -462,10 +468,6 @@
         height: 300px; /* Увеличиваем высоту для мобильных устройств */
         padding: 10px;
       }
-      
-      .yearly-comparison-container canvas {
-        height: 280px !important; /* Принудительно устанавливаем высоту canvas */
-      }
     }
 
     @media (max-width: 360px) {
@@ -488,16 +490,11 @@
       .yearly-comparison-container {
         height: 320px; /* Еще больше увеличиваем высоту для очень маленьких экранов */
       }
-      
-      .yearly-comparison-container canvas {
-        height: 300px !important;
-      }
     }
 
     @supports (-webkit-touch-callout: none) {
       input[type="date"] {
         min-height: 44px;
-      
         font-size: 16px;
         padding: 12px;
       }
@@ -571,7 +568,7 @@
       </div>
     </div>
     
- <div class="table-container" id="tableContainer">
+    <div class="table-container" id="tableContainer">
       <table class="data-table">
         <thead>
           <tr>
@@ -597,31 +594,24 @@
         </tbody>
       </table>
     </div>
-  </div>
     
-
     <div class="yearly-comparison-container" id="yearlyComparisonContainer">
-       <div class="chart-title">СРАВНЕНИЕ FPS ПО ГОДАМ</div>
+      <div class="chart-title">СРАВНЕНИЕ FPS ПО ГОДАМ</div>
       <canvas id="yearlyComparisonChart"></canvas>
     </div>
   </div>
 
   <script>
-    
     const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbxwkckt1cOWNNR0Iuktyqf8eEpvwQxhuF7zmhsxzT8WNjdn8qh5TGFRhR2AiH263ufbtA/exec';
 
     let machineErrors = Array(14).fill(0);
-  
     let machineFPS = Array(14).fill(0);
     let selectedDate = new Date().toISOString().split('T')[0];
     let originalErrors = Array(14).fill(0);
     
     let errorsChart = null;
-  
-  
     let fpsChart = null;
     let yearlyComparisonChart = null;
-  
     
     // Данные для статистики за месяц
     let monthlyErrors = 0;
@@ -651,12 +641,17 @@
         statsContainer.style.display = 'grid';
         tableContainer.style.display = 'block';
         yearlyComparisonContainer.style.display = 'block';
+        
+        // Создаем графики, если они еще не созданы
         if (!errorsChart || !fpsChart) {
           createCharts();
         }
+        
+        // Создаем график сравнения по годам, если он еще не создан
         if (!yearlyComparisonChart) {
           createYearlyComparisonChart();
         }
+        
         loadTableData(); // Загружаем данные таблицы при открытии
       }
     }
@@ -664,21 +659,16 @@
     // Обновление статистики
     function updateStats() {
       document.getElementById('totalErrors').textContent = monthlyErrors;
-      document.getElementById('totalFPS').textContent = Math.ceil(monthlyFPS); // Округляем в большую сторону
+      document.getElementById('totalFPS').textContent = Math.ceil(monthlyFPS);
     }
 
     // Функция для расчета ошибок за месяц
     function calculateMonthlyErrors() {
-      // Создаем массив для хранения суммы ошибок по каждой машине за месяц
       const monthlyErrors = Array(14).fill(0);
-      
-      // Получаем все строки таблицы
       const tableRows = document.querySelectorAll('#tableBody tr');
       
-      // Проходим по всем строкам таблицы и суммируем ошибки
       tableRows.forEach(row => {
         const cells = row.querySelectorAll('td');
-        // Пропускаем первую ячейку (день)
         for (let i = 1; i < cells.length; i++) {
           const errorCount = parseInt(cells[i].textContent) || 0;
           monthlyErrors[i - 1] += errorCount;
@@ -686,15 +676,6 @@
       });
       
       return monthlyErrors;
-    }
-
-    // Генерация таблицы с данными
-    function generateTable() {
-      const tableBody = document.getElementById('tableBody');
-      tableBody.innerHTML = '';
-      
-      // Загружаем данные таблицы с сервера
-      loadTableData();
     }
 
     // Загрузка данных таблицы
@@ -721,7 +702,6 @@
         
         if (data.tableData) {
           populateTable(data.tableData);
-          // Обновляем графики после загрузки данных таблицы
           if (errorsChart && fpsChart) {
             updateCharts();
           }
@@ -729,7 +709,6 @@
           populateDemoTable();
         }
         
-        // Обновляем данные для графиков и статистики
         if (data.chartData) {
           machineFPS = data.chartData.fps || Array(14).fill(0);
         }
@@ -745,7 +724,6 @@
         }
       } catch (error) {
         console.error('Ошибка при загрузке данных таблицы:', error);
-        // Заполняем таблицу демо-данными в случае ошибки
         populateDemoTable();
       }
     }
@@ -756,28 +734,23 @@
       tableBody.innerHTML = '';
       
       tableData.forEach(row => {
-        // Пропускаем пустые строки
         if (!row.day && row.errors.every(error => error === 0)) {
           return;
         }
         
         const tr = document.createElement('tr');
         
-        // Ячейка с днем
         const dayCell = document.createElement('td');
         dayCell.textContent = row.day;
         dayCell.style.fontWeight = 'bold';
         tr.appendChild(dayCell);
         
-        // Ячейки с ошибками для каждой машины
         row.errors.forEach(error => {
           const errorCell = document.createElement('td');
-          // Показываем только ненулевые значения
           if (error !== 0) {
             errorCell.textContent = error;
             errorCell.className = 'non-zero';
           } else {
-            // Для нулевых значений оставляем ячейку пустой
             errorCell.textContent = '';
             errorCell.className = '';
           }
@@ -793,28 +766,22 @@
       const tableBody = document.getElementById('tableBody');
       tableBody.innerHTML = '';
       
-      // Создаем 31 строку для таблицы
       for (let i = 1; i <= 31; i++) {
         const row = document.createElement('tr');
         
-        // Первая ячейка - номер дня
         const dayCell = document.createElement('td');
         dayCell.textContent = i;
         dayCell.style.fontWeight = 'bold';
         row.appendChild(dayCell);
         
-        // 14 ячеек с данными для каждой машине
         for (let j = 0; j < 14; j++) {
           const dataCell = document.createElement('td');
-          // Случайные данные для демонстрации
           const value = Math.floor(Math.random() * 10);
           
-          // Показываем только ненулевые значения
           if (value !== 0) {
             dataCell.textContent = value;
             dataCell.className = 'non-zero';
           } else {
-            // Для нулевых значений оставляем ячейку пустой
             dataCell.textContent = '';
             dataCell.className = '';
           }
@@ -869,7 +836,6 @@
         const countElement = cell.querySelector('.error-count');
         countElement.textContent = machineErrors[index];
         
-        // Обновляем класс в зависимости от значения
         if (machineErrors[index] === 0) {
           countElement.className = 'error-count zero';
         } else {
@@ -888,7 +854,6 @@
         fpsChart.destroy();
       }
       
-      // Получаем данные за месяц для графика ошибок
       const monthlyErrorsData = calculateMonthlyErrors();
       
       const errorsCtx = document.getElementById('errorsChart').getContext('2d');
@@ -908,6 +873,7 @@
         },
         options: {
           responsive: true,
+          maintainAspectRatio: true,
           plugins: {
             legend: {
               display: false
@@ -972,6 +938,7 @@
         },
         options: {
           responsive: true,
+          maintainAspectRatio: true,
           plugins: {
             legend: {
               display: false
@@ -982,7 +949,7 @@
                   return `Lane ${tooltipItems[0].label}`;
                 },
                 label: function(context) {
-                  return ` ${Math.ceil(context.raw)}`; // Округляем в большую сторону
+                  return ` ${Math.ceil(context.raw)}`;
                 }
               }
             }
@@ -1023,7 +990,6 @@
     // Новая функция для загрузки данных сравнения по годам
     async function loadYearlyComparisonData() {
       try {
-        // Используем специальный параметр для запроса данных сравнения по годам
         const response = await fetch(`${BACKEND_URL}?yearlyComparison=true`, {
           method: 'GET',
           headers: {
@@ -1046,7 +1012,6 @@
         return data;
       } catch (error) {
         console.error('Ошибка при загрузке данных сравнения по годам:', error);
-        // Возвращаем демо-данные в случае ошибки
         return getDemoYearlyData();
       }
     }
@@ -1066,15 +1031,18 @@
     
     // Обновленная функция создания графика сравнения по годам
     async function createYearlyComparisonChart() {
-      const yearlyComparisonCtx = document.getElementById('yearlyComparisonChart').getContext('2d');
+      const yearlyComparisonCtx = document.getElementById('yearlyComparisonChart');
+      
+      // Убедимся, что canvas имеет правильные размеры
+      yearlyComparisonCtx.style.width = '100%';
+      yearlyComparisonCtx.style.height = '100%';
       
       // Загружаем данные с сервера
       const yearlyData = await loadYearlyComparisonData();
       
       // Создаем датасеты для каждого года
       const datasets = yearlyData.years.map((year, index) => {
-        // Генерируем случайный цвет для каждого года
-        const hue = index * 60 % 360; // Равномерное распределение цветов по цветовому кругу
+        const hue = index * 60 % 360;
         return {
           label: year.toString(),
           data: yearlyData.data[year] || Array(12).fill(0),
@@ -1086,6 +1054,11 @@
         };
       });
       
+      // Уничтожаем предыдущий график, если он существует
+      if (yearlyComparisonChart) {
+        yearlyComparisonChart.destroy();
+      }
+      
       yearlyComparisonChart = new Chart(yearlyComparisonCtx, {
         type: 'line',
         data: {
@@ -1094,14 +1067,13 @@
         },
         options: {
           responsive: true,
-          maintainAspectRatio: false, // Отключаем сохранение пропорций для лучшего контроля высоты
+          maintainAspectRatio: false, // Важно для контроля высоты
           plugins: {
             legend: {
               position: 'top',
             },
             title: {
-              display: false, // Убираем заголовок графика
-              text: ''
+              display: false,
             }
           },
           scales: {
@@ -1109,23 +1081,18 @@
               beginAtZero: true,
               title: {
                 display: true,
+                text: 'FPS'
               }
             },
             x: {
               title: {
                 display: true,
+                text: 'Месяцы'
               }
             }
           }
         }
       });
-      
-      // Устанавливаем высоту canvas для мобильных устройств
-      if (window.innerWidth <= 480) {
-        const canvas = document.getElementById('yearlyComparisonChart');
-        canvas.style.height = '280px';
-        yearlyComparisonChart.update(); // Обновляем график с новой высотой
-      }
     }
     
     function updateCharts() {
@@ -1178,16 +1145,13 @@
         if (result.success) {
           originalErrors = [...machineErrors];
           
-          // ОБНОВЛЕНИЕ ДАННЫХ АНАЛИЗА ПОСЛЕ СОХРАНЕНИЯ
-          // Перезагружаем данные для текущей даты
           await loadDataForDate(selectedDate);
           
-          // Если анализ открыт, обновляем графики и таблицу
           if (document.getElementById('tableContainer').style.display === 'block') {
             if (errorsChart && fpsChart) {
               updateCharts();
             }
-            loadTableData(); // Перезагружаем данные таблицы
+            loadTableData();
           }
           
         } else {
@@ -1239,12 +1203,10 @@
           }
         }
         
-        // Загружаем данные для графиков
         if (data.chartData) {
           machineFPS = data.chartData.fps || Array(14).fill(0);
         }
         
-        // Загружаем статистику за месяц
         if (data.totalStats) {
           monthlyErrors = data.totalStats.errors || 0;
           monthlyFPS = data.totalStats.fps || 0;
@@ -1253,7 +1215,6 @@
         updateDisplay();
         updateStats();
         
-        // Если открыта таблица, обновляем ее данные
         if (document.getElementById('tableContainer').style.display === 'block') {
           if (data.tableData) {
             populateTable(data.tableData);
@@ -1261,7 +1222,6 @@
             populateDemoTable();
           }
           
-          // Обновляем графики, если они созданы
           if (errorsChart && fpsChart) {
             updateCharts();
           }
@@ -1281,7 +1241,6 @@
         
         updateDisplay();
         
-        // Если открыта таблица, обновляем демо-данные
         if (document.getElementById('tableContainer').style.display === 'block') {
           populateDemoTable();
         }
@@ -1363,7 +1322,7 @@
       showLoader();
       generateMachineCells();
       loadDataForDate(selectedDate);
-      updateStats(); // Инициализируем статистику
+      updateStats();
     });
   </script>
 </body>
