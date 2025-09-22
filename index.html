@@ -1300,31 +1300,36 @@
           labels: yearlyData.months,
           datasets: datasets
         },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              position: 'top',
-            },
-            title: {
-              display: false,
-            }
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              title: {
-                display: true,
-              }
-            },
-            x: {
-              title: {
-                display: true,
-              }
-            }
-          }
-        }
+options: {
+  responsive: true,
+  maintainAspectRatio: false,
+  layout: {
+    padding: {
+      bottom: 30 // 👉 добавляем больше места снизу
+    }
+  },
+  plugins: {
+    legend: {
+      position: 'top',
+    },
+    title: {
+      display: true,
+      text: 'Сравнение по годам'
+    }
+  },
+  scales: {
+    x: {
+      ticks: {
+        padding: 10, // 👉 отодвигаем подписи чуть ниже
+        maxRotation: 45,
+        autoSkip: true
+      }
+    },
+    y: {
+      beginAtZero: true
+    }
+  }
+}
       });
     }
     
