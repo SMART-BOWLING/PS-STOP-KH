@@ -921,35 +921,67 @@
         }
       });
       
-yearlyComparisonChart = new Chart(yearlyComparisonCtx, {
-        type: 'line',
+      const fpsCtx = document.getElementById('fpsChart').getContext('2d');
+      fpsChart = new Chart(fpsCtx, {
+        type: 'bar',
         data: {
-          labels: yearlyData.months,
-          datasets: datasets
+          labels: machineNumbers,
+          datasets: [{
+            data: machineFPS,
+            backgroundColor: 'rgba(26, 47, 64, 0.8)',
+            borderColor: 'rgba(26, 47, 64, 1)',
+            borderWidth: 1,
+            borderRadius: 5,
+            barPercentage: 0.7,
+            categoryPercentage: 0.8
+          }]
         },
         options: {
           responsive: true,
-          maintainAspectRatio: false, // Важно для контроля высоты
+          maintainAspectRatio: true,
           plugins: {
             legend: {
-              position: 'top',
+              display: false
             },
-            title: {
-              display: false,
+            tooltip: {
+              callbacks: {
+                title: function(tooltipItems) {
+                  return `Lane ${tooltipItems[0].label}`;
+                },
+                label: function(context) {
+                  return ` ${Math.ceil(context.raw)}`;
+                }
+              }
             }
           },
           scales: {
             y: {
               beginAtZero: true,
+              grid: {
+                color: 'rgba(0, 0, 0, 0.05)'
+              },
+              ticks: {
+                display: false
+              },
               title: {
-                display: true,
+                display: false
               }
             },
             x: {
+              grid: {
+                display: false
+              },
+              ticks: {
+                display: true
+              },
               title: {
-                display: true,
+                display: false
               }
             }
+          },
+          animation: {
+            duration: 1000,
+            easing: 'easeOutQuart'
           }
         }
       });
@@ -1027,7 +1059,7 @@ yearlyComparisonChart = new Chart(yearlyComparisonCtx, {
         yearlyComparisonChart.destroy();
       }
       
-это ту  ?       yearlyComparisonChart = new Chart(yearlyComparisonCtx, {
+      yearlyComparisonChart = new Chart(yearlyComparisonCtx, {
         type: 'line',
         data: {
           labels: yearlyData.months,
