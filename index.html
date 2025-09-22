@@ -313,21 +313,6 @@
       100% { transform: rotate(360deg); }
     }
     
-    /* Анимация успешной загрузки */
-    .analysis-btn.success {
-      background: #4CAF50;
-      color: white;
-      border-color: #4CAF50;
-    }
-    
-    .analysis-btn.success::after {
-      content: '✓';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 20px;
-    }
     
     /* Пульсирующая анимация при открытии */
     .analysis-btn.pulse {
@@ -501,7 +486,7 @@
       border-radius: 15px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       position: relative;
-      height: 600px;
+      height: 500px;
       opacity: 0;
       transition: opacity 0.5s ease-in-out;
     }
@@ -757,6 +742,7 @@
       switch(state) {
         case 'loading':
           analysisBtn.classList.add('loading');
+          
           break;
         case 'success':
           analysisBtn.classList.add('success');
@@ -771,6 +757,7 @@
         case 'pulse':
           analysisBtn.classList.add('pulse');
           break;
+          
         default:
           if (isAnalysisOpen) {
             analysisBtn.innerHTML = '<span class="btn-text">СКРЫТЬ АНАЛИЗ</span>';
