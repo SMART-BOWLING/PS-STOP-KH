@@ -1059,39 +1059,47 @@
         yearlyComparisonChart.destroy();
       }
       
-      yearlyComparisonChart = new Chart(yearlyComparisonCtx, {
-        type: 'line',
-        data: {
-          labels: yearlyData.months,
-          datasets: datasets
+yearlyComparisonChart = new Chart(yearlyComparisonCtx, {
+  type: 'line',
+  data: {
+    labels: yearlyData.months,
+    datasets: datasets
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false, // Важно для контроля высоты
+    plugins: {
+      legend: {
+        position: 'top',
+      },
+      title: {
+        display: true,
+        text: 'Ошибки по годам',
+        font: {
+          size: 18
         },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false, // Важно для контроля высоты
-          plugins: {
-            legend: {
-              position: 'top',
-            },
-            title: {
-              display: false,
-            }
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              title: {
-                display: true,
-              }
-            },
-            x: {
-              title: {
-                display: true,
-              }
-            }
-          }
+        padding: {
+          top: 10,
+          bottom: 20
         }
-      });
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        title: {
+          display: true,
+        }
+      },
+      x: {
+        title: {
+          display: true,
+        }
+      }
     }
+  }
+});
+
     
     function updateCharts() {
       if (errorsChart) {
