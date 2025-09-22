@@ -1264,7 +1264,7 @@
       };
     }
     
-    // Обновленная функция создания графика сравнения по годам
+    // Обновленная функция создания графика сравнения по годам с обрывами на нулях
     async function createYearlyComparisonChart() {
       const yearlyComparisonCtx = document.getElementById('yearlyComparisonChart');
       
@@ -1278,14 +1278,21 @@
       // Создаем датасеты для каждого года
       const datasets = yearlyData.years.map((year, index) => {
         const hue = index * 60 % 360;
+        
+        // Преобразуем данные: заменяем нули на null для обрыва линии
+        const dataWithNulls = (yearlyData.data[year] || Array(12).fill(0)).map(value => 
+          value === 0 ? null : value
+        );
+        
         return {
           label: year.toString(),
-          data: yearlyData.data[year] || Array(12).fill(0),
+          data: dataWithNulls,
           borderColor: `hsl(${hue}, 70%, 50%)`,
           backgroundColor: `hsla(${hue}, 70%, 50%, 0.2)`,
           borderWidth: 2,
           fill: false,
-          tension: 0.4
+          tension: 0.4,
+          spanGaps: false // Важно: не соединять промежутки
         };
       });
       
@@ -1300,36 +1307,71 @@
           labels: yearlyData.months,
           datasets: datasets
         },
-options: {
-  responsive: true,
-  maintainAspectRatio: false,
-  layout: {
-    padding: {
-      bottom: 30
-    }
-  },
-  plugins: {
-    legend: {
-      position: 'top',
-    },
-    title: {
-      display: false  // 👈 скрываем заголовок
-    }
-  },
-  scales: {
-    x: {
-      ticks: {
-        padding: 10,
-        maxRotation: 45,
-        autoSkip: true
-      }
-    },
-    y: {
-      beginAtZero: true
-    }
-  }
-}
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          layout: {
+            padding: {
+              bottom: 30
+            }
+          },
+          plugins: {
+            legend: {
+              position: 'top',
+            },
+            title: {
+              display: false
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  // Скрываем тултипы для нулевых значений
+                  return context.raw === null ? 'Нет данных' : ` ${context.raw}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              ticks: {
+                padding: 10,
+                maxRotation: 45,
+                autoSkip: true
+              }
+            },
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(value) {
+                  // Не показываем 0 на оси Y если хотим скрыть нулевые значения полностью
+                  return value === 0 ? '' : value;
+                }
+              }
+            }
+          },
+          elements: {
+            point: {
+              radius: function(context) {
+                // Скрываем точки для нулевых значений
+                return context.raw === null ? 0 : 3;
+              },
+              hoverRadius: function(context) {
+                return context.raw === null ? 0 : 5;
+              }
+            }
+          }
+        }
       });
+    }
+    
+    // Функция для обновления данных графика с обрывами на нулях
+    function updateYearlyComparisonChart() {
+      if (yearlyComparisonChart) {
+        yearlyComparisonChart.data.datasets.forEach(dataset => {
+          dataset.data = dataset.data.map(value => value === 0 ? null : value);
+        });
+        yearlyComparisonChart.update();
+      }
     }
     
     function updateCharts() {
@@ -1391,6 +1433,11 @@ options: {
             }
             await loadTableData();
             updateStats();
+            
+            // Обновляем график сравнения по годам
+            if (yearlyComparisonChart) {
+              updateYearlyComparisonChart();
+            }
           }
           
         } else {
@@ -1465,6 +1512,11 @@ options: {
           if (errorsChart && fpsChart) {
             updateCharts();
           }
+          
+          // Обновляем график сравнения по годам
+          if (yearlyComparisonChart) {
+            updateYearlyComparisonChart();
+          }
         }
       } catch (error) {
         console.error('Ошибка при загрузке данных:', error);
@@ -1486,6 +1538,11 @@ options: {
           populateDemoTable();
           if (errorsChart && fpsChart) {
             updateCharts();
+          }
+          
+          // Обновляем график сравнения по годам
+          if (yearlyComparisonChart) {
+            updateYearlyComparisonChart();
           }
         }
       } finally {
