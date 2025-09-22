@@ -921,67 +921,35 @@
         }
       });
       
-      const fpsCtx = document.getElementById('fpsChart').getContext('2d');
-      fpsChart = new Chart(fpsCtx, {
-        type: 'bar',
+yearlyComparisonChart = new Chart(yearlyComparisonCtx, {
+        type: 'line',
         data: {
-          labels: machineNumbers,
-          datasets: [{
-            data: machineFPS,
-            backgroundColor: 'rgba(26, 47, 64, 0.8)',
-            borderColor: 'rgba(26, 47, 64, 1)',
-            borderWidth: 1,
-            borderRadius: 5,
-            barPercentage: 0.7,
-            categoryPercentage: 0.8
-          }]
+          labels: yearlyData.months,
+          datasets: datasets
         },
         options: {
           responsive: true,
-          maintainAspectRatio: true,
+          maintainAspectRatio: false, // Важно для контроля высоты
           plugins: {
             legend: {
-              display: false
+              position: 'top',
             },
-            tooltip: {
-              callbacks: {
-                title: function(tooltipItems) {
-                  return `Lane ${tooltipItems[0].label}`;
-                },
-                label: function(context) {
-                  return ` ${Math.ceil(context.raw)}`;
-                }
-              }
+            title: {
+              display: false,
             }
           },
           scales: {
             y: {
               beginAtZero: true,
-              grid: {
-                color: 'rgba(0, 0, 0, 0.05)'
-              },
-              ticks: {
-                display: false
-              },
               title: {
-                display: false
+                display: true,
               }
             },
             x: {
-              grid: {
-                display: false
-              },
-              ticks: {
-                display: true
-              },
               title: {
-                display: false
+                display: true,
               }
             }
-          },
-          animation: {
-            duration: 1000,
-            easing: 'easeOutQuart'
           }
         }
       });
