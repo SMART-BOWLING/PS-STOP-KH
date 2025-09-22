@@ -497,6 +497,7 @@
     @supports (-webkit-touch-callout: none) {
       input[type="date"] {
         min-height: 44px;
+      
         font-size: 16px;
         padding: 12px;
       }
@@ -570,8 +571,7 @@
       </div>
     </div>
     
-    <!-- Контейнер для таблицы -->
-    <div class="table-container" id="tableContainer">
+ <div class="table-container" id="tableContainer">
       <table class="data-table">
         <thead>
           <tr>
@@ -579,7 +579,7 @@
             <th>1</th>
             <th>2</th>
             <th>3</th>
-            <极>4</极>
+            <th>4</th>
             <th>5</th>
             <th>6</th>
             <th>7</th>
@@ -597,15 +597,17 @@
         </tbody>
       </table>
     </div>
+  </div>
     
-    <!-- Контейнер для графика сравнения по годам -->
+
     <div class="yearly-comparison-container" id="yearlyComparisonContainer">
-      <!-- Убрал заголовок "СРАВНЕНИЕ СТАТИСТИКИ FPS ПО ГОДАМ" -->
+       <div class="chart-title">СРАВНЕНИЕ FPS ПО ГОДАМ</div>
       <canvas id="yearlyComparisonChart"></canvas>
     </div>
   </div>
 
   <script>
+    
     const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbxwkckt1cOWNNR0Iuktyqf8eEpvwQxhuF7zmhsxzT8WNjdn8qh5TGFRhR2AiH263ufbtA/exec';
 
     let machineErrors = Array(14).fill(0);
@@ -1107,13 +1109,11 @@
               beginAtZero: true,
               title: {
                 display: true,
-                text: 'FPS'
               }
             },
             x: {
               title: {
                 display: true,
-                text: 'Месяцы'
               }
             }
           }
