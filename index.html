@@ -730,6 +730,8 @@
   <!-- ВСЕ СКРИПТЫ В КОНЦЕ С ДЕФЕР -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
   <script>
+    console.log('Скрипт начал выполняться');
+    
     const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbxwkckt1cOWNNR0Iuktyqf8eEpvwQxhuF7zmhsxzT8WNjdn8qh5TGFRhR2AiH263ufbtA/exec';
 
     let machineErrors = Array(14).fill(0);
@@ -751,21 +753,39 @@
     // КЭШ ДЛЯ БЫСТРОЙ ЗАГРУЗКИ ДАННЫХ
     let dataCache = {};
     let lastSaveTime = 0;
-    const SAVE_DEBOUNCE_TIME = 1000; // Защита от частых сохранений
+    const SAVE_DEBOUNCE_TIME = 1000;
     
-    // КАРТОЧКИ ПОЯВЛЯЮТСЯ МГНОВЕННО ПРИ ЗАГРУЗКЕ
+    // УБЕДИТЕСЬ, ЧТО DOM ПОЛНОСТЬЮ ЗАГРУЖЕН
     document.addEventListener('DOMContentLoaded', function() {
-      // 1. Сразу генерируем карточки
-      generateMachineCells();
+      console.log('DOM полностью загружен');
       
-      // 2. Устанавливаем дату
-      document.getElementById('date').value = selectedDate;
+      // Проверяем, существуют ли элементы
+      const grid = document.getElementById('machinesGrid');
+      const dateInput = document.getElementById('date');
       
-      // 3. Загружаем данные СРАЗУ (не в фоне)
-      loadDataForDate(selectedDate);
+      console.log('Grid элемент:', grid);
+      console.log('Date input:', dateInput);
       
-      // 4. Загружаем шрифт асинхронно
-      loadFontsAsync();
+      if (grid && dateInput) {
+        // 1. Сразу генерируем карточки
+        generateMachineCells();
+        
+        // 2. Устанавливаем дату
+        dateInput.value = selectedDate;
+        
+        // 3. Загружаем данные СРАЗУ
+        loadDataForDate(selectedDate);
+        
+        // 4. Загружаем шрифт асинхронно
+        loadFontsAsync();
+      } else {
+        console.error('Элементы не найдены, повторная попытка через 100мс');
+        setTimeout(() => {
+          generateMachineCells();
+          document.getElementById('date').value = selectedDate;
+          loadDataForDate(selectedDate);
+        }, 100);
+      }
     });
 
     function loadFontsAsync() {
@@ -800,6 +820,28 @@
         `;
       }
       grid.innerHTML = html;
+      console.log('Карточки машин сгенерированы');
+    }
+
+    // ПРИНУДИТЕЛЬНОЕ ОБНОВЛЕНИЕ ОТОБРАЖЕНИЯ
+    function forceDisplayUpdate() {
+      const cells = document.querySelectorAll('.machine-cell');
+      cells.forEach((cell, index) => {
+        const countElement = cell.querySelector('.error-count');
+        const errorCount = machineErrors[index];
+        
+        countElement.textContent = errorCount;
+        
+        // Принудительно обновляем классы
+        countElement.classList.remove('zero', 'non-zero');
+        if (errorCount === 0) {
+          countElement.classList.add('zero');
+        } else {
+          countElement.classList.add('non-zero');
+        }
+      });
+      
+      console.log('Принудительное обновление отображения:', machineErrors);
     }
 
     // ОБНОВЛЕНИЕ ОТОБРАЖЕНИЯ КАРТОЧЕК С ДАННЫМИ
@@ -828,9 +870,13 @@
     }
 
     // ОПТИМИЗИРОВАННАЯ ЗАГРУЗКА ДАННЫХ С КЭШИРОВАНИЕМ
-    async function loadDataForDate(date) {
+    async function loadDataForDate(date, retryCount = 0) {
+      const MAX_RETRIES = 3;
+      console.log('Загрузка данных для даты:', date, 'попытка:', retryCount + 1);
+      
       // Проверяем кэш
       if (dataCache[date]) {
+        console.log('Используем кэшированные данные');
         applyCachedData(dataCache[date]);
         return;
       }
@@ -839,7 +885,10 @@
       
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000); // Уменьшил таймаут
+        const timeoutId = setTimeout(() => {
+          console.log('Таймаут загрузки данных');
+          controller.abort();
+        }, 8000);
         
         const response = await fetch(`${BACKEND_URL}?date=${encodeURIComponent(date)}&simple=true`, {
           signal: controller.signal,
@@ -850,18 +899,28 @@
         
         if (response.ok) {
           const data = await response.json();
+          console.log('Данные получены:', data);
           
           // Сохраняем в кэш
           dataCache[date] = data;
           applyCachedData(data);
           
         } else {
-          throw new Error('Ошибка сервера');
+          throw new Error(`Ошибка сервера: ${response.status}`);
         }
       } catch (error) {
-        console.log('Ошибка загрузки данных:', error);
-        // Используем данные по умолчанию
-        applyDefaultData();
+        console.error('Ошибка загрузки данных:', error);
+        
+        if (retryCount < MAX_RETRIES) {
+          console.log(`Повторная попытка через ${1000 * (retryCount + 1)}мс`);
+          setTimeout(() => {
+            loadDataForDate(date, retryCount + 1);
+          }, 1000 * (retryCount + 1));
+        } else {
+          console.log('Все попытки исчерпаны, используем данные по умолчанию');
+          // Используем данные по умолчанию
+          applyDefaultData();
+        }
       } finally {
         hideLoader();
       }
@@ -871,7 +930,8 @@
       if (data.errors) {
         machineErrors = data.errors;
         originalErrors = [...data.errors]; // ГЛУБОКОЕ КОПИРОВАНИЕ
-        updateDisplay();
+        console.log('Применяем кэшированные ошибки:', machineErrors);
+        forceDisplayUpdate();
       }
       
       if (data.chartData) {
@@ -885,12 +945,14 @@
       }
       
       isDataLoaded = true;
+      console.log('Данные успешно применены');
     }
 
     function applyDefaultData() {
       machineErrors = Array(14).fill(0);
-      originalErrors = Array(14).fill(0); // ИНИЦИАЛИЗИРУЕМ ОРИГИНАЛЬНЫЕ ДАННЫЕ
-      updateDisplay();
+      originalErrors = Array(14).fill(0);
+      console.log('Применяем данные по умолчанию');
+      forceDisplayUpdate();
       isDataLoaded = true;
     }
 
@@ -898,7 +960,7 @@
       if (confirm('Отменить все несохраненные изменения?')) {
         // ВОССТАНАВЛИВАЕМ ДАННЫЕ ИЗ ОРИГИНАЛЬНОГО МАССИВА
         machineErrors = [...originalErrors];
-        updateDisplay();
+        forceDisplayUpdate();
         
         // ОБНОВЛЯЕМ АНАЛИТИКУ ТОЛЬКО ЕСЛИ ОНА ОТКРЫТА
         if (analyticsLoaded && isAnalysisOpen) {
@@ -1366,7 +1428,7 @@
           }
           
           // МГНОВЕННОЕ ОБНОВЛЕНИЕ ИНТЕРФЕЙСА
-          updateDisplay();
+          forceDisplayUpdate();
           
           // ОБНОВЛЯЕМ АНАЛИТИКУ ТОЛЬКО ЕСЛИ ОНА ОТКРЫТА
           if (analyticsLoaded && isAnalysisOpen) {
@@ -1462,6 +1524,11 @@
         e.returnValue = 'У вас есть несохраненные изменения. Вы уверены, что хотите уйти?';
         return e.returnValue;
       }
+    });
+
+    // Обработка глобальных ошибок
+    window.addEventListener('error', function(e) {
+      console.error('Global error:', e.error);
     });
   </script>
 </body>
