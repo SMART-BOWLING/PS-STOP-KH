@@ -870,8 +870,8 @@
     function applyCachedData(data) {
       if (data.errors) {
         machineErrors = data.errors;
-        originalErrors = [...data.errors];
-        updateDisplay(); // МГНОВЕННОЕ ОБНОВЛЕНИЕ КАРТОЧЕК
+        originalErrors = [...data.errors]; // ГЛУБОКОЕ КОПИРОВАНИЕ
+        updateDisplay();
       }
       
       if (data.chartData) {
@@ -889,9 +889,23 @@
 
     function applyDefaultData() {
       machineErrors = Array(14).fill(0);
-      originalErrors = Array(14).fill(0);
+      originalErrors = Array(14).fill(0); // ИНИЦИАЛИЗИРУЕМ ОРИГИНАЛЬНЫЕ ДАННЫЕ
       updateDisplay();
       isDataLoaded = true;
+    }
+
+    function cancelChanges() {
+      if (confirm('Отменить все несохраненные изменения?')) {
+        // ВОССТАНАВЛИВАЕМ ДАННЫЕ ИЗ ОРИГИНАЛЬНОГО МАССИВА
+        machineErrors = [...originalErrors];
+        updateDisplay();
+        
+        // ОБНОВЛЯЕМ АНАЛИТИКУ ТОЛЬКО ЕСЛИ ОНА ОТКРЫТА
+        if (analyticsLoaded && isAnalysisOpen) {
+          if (errorsChart && fpsChart) updateCharts();
+          updateStats();
+        }
+      }
     }
 
     function updateAnalysisButtonState(state) {
@@ -1387,17 +1401,6 @@
         saveBtn.textContent = originalText;
         saveBtn.style.background = '#1a2f40';
       }, 2000);
-    }
-    
-    function cancelChanges() {
-      if (confirm('Отменить все несохраненные изменения?')) {
-        // ВОССТАНАВЛИВАЕМ ДАННЫЕ ИЗ КЭША ИЛИ ПЕРЕЗАГРУЖАЕМ
-        if (dataCache[selectedDate]) {
-          applyCachedData(dataCache[selectedDate]);
-        } else {
-          loadDataForDate(selectedDate);
-        }
-      }
     }
     
     document.getElementById('date').addEventListener('change', function(e) {
