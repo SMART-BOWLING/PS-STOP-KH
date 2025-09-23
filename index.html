@@ -748,6 +748,11 @@
     let isAnalysisOpen = false;
     let isDataLoaded = false;
     
+    // КЭШ ДЛЯ БЫСТРОЙ ЗАГРУЗКИ ДАННЫХ
+    let dataCache = {};
+    let lastSaveTime = 0;
+    const SAVE_DEBOUNCE_TIME = 1000; // Защита от частых сохранений
+    
     // КАРТОЧКИ ПОЯВЛЯЮТСЯ МГНОВЕННО ПРИ ЗАГРУЗКЕ
     document.addEventListener('DOMContentLoaded', function() {
       // 1. Сразу генерируем карточки
@@ -756,13 +761,10 @@
       // 2. Устанавливаем дату
       document.getElementById('date').value = selectedDate;
       
-      // 3. Показываем лоадер на время загрузки данных
-      showLoader();
-      
-      // 4. Загружаем данные СРАЗУ (не в фоне)
+      // 3. Загружаем данные СРАЗУ (не в фоне)
       loadDataForDate(selectedDate);
       
-      // 5. Загружаем шрифт асинхронно
+      // 4. Загружаем шрифт асинхронно
       loadFontsAsync();
     });
 
@@ -784,16 +786,16 @@
       document.getElementById("loader").style.display = "none";
     }
 
-    // БЫСТРАЯ ГЕНЕРАЦИЯ КАРТОЧЕК С ИНДИКАТОРОМ ЗАГРУЗКИ
+    // БЫСТРАЯ ГЕНЕРАЦИЯ КАРТОЧЕК
     function generateMachineCells() {
       const grid = document.getElementById('machinesGrid');
       let html = '';
       
       for (let i = 0; i < 14; i++) {
         html += `
-          <div class="machine-cell loading" onclick="incrementMachine(${i})">
+          <div class="machine-cell" onclick="incrementMachine(${i})">
             <div class="machine-number">LANE ${i + 1}</div>
-            <div class="error-count zero" style="opacity:0">0</div>
+            <div class="error-count zero">0</div>
           </div>
         `;
       }
@@ -804,12 +806,8 @@
     function updateDisplay() {
       const cells = document.querySelectorAll('.machine-cell');
       cells.forEach((cell, index) => {
-        // Убираем индикатор загрузки
-        cell.classList.remove('loading');
-        
         const countElement = cell.querySelector('.error-count');
         countElement.textContent = machineErrors[index];
-        countElement.style.opacity = '1';
         
         if (machineErrors[index] === 0) {
           countElement.className = 'error-count zero';
@@ -822,21 +820,28 @@
     function incrementMachine(index) {
       machineErrors[index]++;
       updateDisplay();
+      
+      // ОБНОВЛЯЕМ ТОЛЬКО ЕСЛИ АНАЛИЗ УЖЕ ОТКРЫТ
       if (errorsChart && analyticsLoaded && isAnalysisOpen) {
         updateCharts();
       }
     }
 
-    // ОПТИМИЗИРОВАННАЯ ЗАГРУЗКА ДАННЫХ - ТЕПЕРЬ ЖДЕМ ДАННЫЕ
+    // ОПТИМИЗИРОВАННАЯ ЗАГРУЗКА ДАННЫХ С КЭШИРОВАНИЕМ
     async function loadDataForDate(date) {
+      // Проверяем кэш
+      if (dataCache[date]) {
+        applyCachedData(dataCache[date]);
+        return;
+      }
+      
+      showLoader();
+      
       try {
-        // Показываем индикатор загрузки на карточках
-        showCardsLoadingState(true);
-        
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000); // Увеличил таймаут
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // Уменьшил таймаут
         
-        const response = await fetch(`${BACKEND_URL}?date=${encodeURIComponent(date)}`, {
+        const response = await fetch(`${BACKEND_URL}?date=${encodeURIComponent(date)}&simple=true`, {
           signal: controller.signal,
           headers: { 'Accept': 'application/json' },
         });
@@ -846,52 +851,47 @@
         if (response.ok) {
           const data = await response.json();
           
-          if (data.errors) {
-            machineErrors = data.errors;
-            originalErrors = [...data.errors];
-            updateDisplay(); // ОБНОВЛЯЕМ КАРТОЧКИ С ДАННЫМИ
-          }
-          
-          if (data.chartData) {
-            machineFPS = data.chartData.fps || Array(14).fill(0);
-          }
-          
-          if (data.totalStats) {
-            monthlyErrors = data.totalStats.errors || 0;
-            monthlyFPS = data.totalStats.fps || 0;
-            updateStats();
-          }
-          
-          isDataLoaded = true;
-          hideLoader();
-          showCardsLoadingState(false);
+          // Сохраняем в кэш
+          dataCache[date] = data;
+          applyCachedData(data);
           
         } else {
           throw new Error('Ошибка сервера');
         }
       } catch (error) {
         console.log('Ошибка загрузки данных:', error);
-        // Если ошибка - используем данные по умолчанию, но все равно обновляем карточки
-        updateDisplay();
+        // Используем данные по умолчанию
+        applyDefaultData();
+      } finally {
         hideLoader();
-        showCardsLoadingState(false);
       }
     }
 
-    // ФУНКЦИЯ ДЛЯ ПОКАЗА/СКРЫТИЯ ИНДИКАТОРА ЗАГРУЗКИ НА КАРТОЧКАХ
-    function showCardsLoadingState(show) {
-      const cells = document.querySelectorAll('.machine-cell');
-      cells.forEach(cell => {
-        if (show) {
-          cell.classList.add('loading');
-          const countElement = cell.querySelector('.error-count');
-          countElement.style.opacity = '0';
-        } else {
-          cell.classList.remove('loading');
-          const countElement = cell.querySelector('.error-count');
-          countElement.style.opacity = '1';
-        }
-      });
+    function applyCachedData(data) {
+      if (data.errors) {
+        machineErrors = data.errors;
+        originalErrors = [...data.errors];
+        updateDisplay(); // МГНОВЕННОЕ ОБНОВЛЕНИЕ КАРТОЧЕК
+      }
+      
+      if (data.chartData) {
+        machineFPS = data.chartData.fps || Array(14).fill(0);
+      }
+      
+      if (data.totalStats) {
+        monthlyErrors = data.totalStats.errors || 0;
+        monthlyFPS = data.totalStats.fps || 0;
+        updateStats();
+      }
+      
+      isDataLoaded = true;
+    }
+
+    function applyDefaultData() {
+      machineErrors = Array(14).fill(0);
+      originalErrors = Array(14).fill(0);
+      updateDisplay();
+      isDataLoaded = true;
     }
 
     function updateAnalysisButtonState(state) {
@@ -994,11 +994,13 @@
       updateAnalysisButtonState('loading');
       
       try {
-        await new Promise(resolve => setTimeout(resolve, 500));
-        await loadTableData();
-        await createYearlyComparisonChart();
-        createCharts();
-        updateStats();
+        // Загружаем аналитические данные только при первом открытии
+        if (!analyticsLoaded) {
+          await loadTableData();
+          await createYearlyComparisonChart();
+          createCharts();
+          updateStats();
+        }
         
         analyticsLoaded = true;
         updateAnalysisButtonState('success');
@@ -1045,7 +1047,7 @@
 
     async function loadTableData() {
       try {
-        const response = await fetch(`${BACKEND_URL}?date=${encodeURIComponent(selectedDate)}`, {
+        const response = await fetch(`${BACKEND_URL}?date=${encodeURIComponent(selectedDate)}&table=true`, {
           method: 'GET',
           headers: { 'Accept': 'application/json' },
         });
@@ -1301,7 +1303,14 @@
       }
     }
     
+    // ОПТИМИЗИРОВАННОЕ СОХРАНЕНИЕ ДАННЫХ
     async function saveData() {
+      const now = Date.now();
+      if (now - lastSaveTime < SAVE_DEBOUNCE_TIME) {
+        return; // Защита от частых сохранений
+      }
+      lastSaveTime = now;
+      
       showLoader();
       
       try {
@@ -1313,9 +1322,11 @@
           return;
         }
         
+        // ОПТИМИЗИРОВАННЫЙ ЗАПРОС - ТОЛЬКО ИЗМЕНЕНИЯ
         const formData = new URLSearchParams();
         formData.append('date', selectedDate);
         formData.append('errors', JSON.stringify(changes));
+        formData.append('simple', 'true'); // Флаг для простого сохранения
         
         const response = await fetch(BACKEND_URL, {
           method: 'POST',
@@ -1332,15 +1343,27 @@
         }
         
         if (result.success) {
+          // ОБНОВЛЯЕМ КЭШ И ДАННЫЕ
           originalErrors = [...machineErrors];
-          await loadDataForDate(selectedDate);
           
+          // ОБНОВЛЯЕМ КЭШ ДЛЯ ТЕКУЩЕЙ ДАТЫ
+          if (dataCache[selectedDate]) {
+            dataCache[selectedDate].errors = [...machineErrors];
+          }
+          
+          // МГНОВЕННОЕ ОБНОВЛЕНИЕ ИНТЕРФЕЙСА
+          updateDisplay();
+          
+          // ОБНОВЛЯЕМ АНАЛИТИКУ ТОЛЬКО ЕСЛИ ОНА ОТКРЫТА
           if (analyticsLoaded && isAnalysisOpen) {
             if (errorsChart && fpsChart) updateCharts();
             await loadTableData();
             updateStats();
-            if (yearlyComparisonChart) updateYearlyComparisonChart();
           }
+          
+          // Показываем уведомление об успешном сохранении
+          showSaveNotification();
+          
         } else {
           throw new Error(result.error || 'Ошибка при сохранении');
         }
@@ -1352,10 +1375,28 @@
       }
     }
     
+    // ФУНКЦИЯ ДЛЯ ПОКАЗА УВЕДОМЛЕНИЯ О СОХРАНЕНИИ
+    function showSaveNotification() {
+      const saveBtn = document.querySelector('.save-btn');
+      const originalText = saveBtn.textContent;
+      
+      saveBtn.textContent = '✓ СОХРАНЕНО';
+      saveBtn.style.background = '#28a745';
+      
+      setTimeout(() => {
+        saveBtn.textContent = originalText;
+        saveBtn.style.background = '#1a2f40';
+      }, 2000);
+    }
+    
     function cancelChanges() {
       if (confirm('Отменить все несохраненные изменения?')) {
-        showLoader();
-        loadDataForDate(selectedDate);
+        // ВОССТАНАВЛИВАЕМ ДАННЫЕ ИЗ КЭША ИЛИ ПЕРЕЗАГРУЖАЕМ
+        if (dataCache[selectedDate]) {
+          applyCachedData(dataCache[selectedDate]);
+        } else {
+          loadDataForDate(selectedDate);
+        }
       }
     }
     
@@ -1373,6 +1414,7 @@
       analyticsLoaded = false;
       isAnalysisOpen = false;
       updateAnalysisButtonState('default');
+      hideAnalyticsElements();
       loadDataForDate(selectedDate);
     });
 
